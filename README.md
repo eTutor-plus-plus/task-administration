@@ -4,7 +4,7 @@ This application provides a REST-interface for the eTutor task administration.
 
 ## Development
 
-See [CONTRIBUTING.md](https://github.com/martin-temp/task-administration/blob/main/CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](https://github.com/eTutor-plus-plus/task-administration/blob/main/CONTRIBUTING.md) for details.
 
 ## Docker
 
