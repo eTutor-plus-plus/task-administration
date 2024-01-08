@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" th:lang="${#locale}">
+<head>
+    <!-- Meta -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="noindex">
+
+    <!-- Title -->
+    <title layout:title-pattern="$CONTENT_TITLE | $LAYOUT_TITLE">eTutor Task Administration</title>
+
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+
+    <!-- Style -->
+    <link href="/css/app.css" type="text/css" rel="stylesheet"/>
+</head>
+<body class="d-flex align-items-center py-4 bg-body-tertiary min-vh-100">
+    <main class="centered w-100 m-auto h-100">
+        <main id="content" layout:fragment="content">MAIN</main>
+    </main>
+</body>
+</html>

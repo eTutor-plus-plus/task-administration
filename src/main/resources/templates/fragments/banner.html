@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<div th:fragment="banner">
+    <img class="mb-4 img-fluid d-none d-lg-block" alt="Logo" th:src="${'/images/dke_hoch_' + #locale + '_white.svg'}">
+    <img class="mb-4 img-fluid d-lg-none w-100" style="max-width: 30rem;" alt="Logo" th:src="${'/images/dke_quer_' + #locale + '_white.svg'}">
+    <h1 class="h3 text-center " th:text="#{etutor.title}"></h1>
+
+    <div class="d-flex justify-content-between pt-4">
+        <a th:text="#{banner.impress}" class="text-white text-decoration-none fw-normal"
+           th:href="'http://dke.jku.at/legal_notice.html?lang=' + ${#locale}" target="_blank"></a>
+
+        <a th:href="@{''(lang=${#locale.toLanguageTag().startsWith('en')} ? 'de' : 'en')}" class="text-white text-decoration-none"
+           th:text="${#locale.toLanguageTag().startsWith('en')} ? 'DE' : 'EN'"></a>
+    </div>
+</div>
+<div th:fragment="bannerWithoutLang">
+    <img class="mb-4 img-fluid d-none d-lg-block" alt="Logo" th:src="${'/images/dke_hoch_' + #locale + '_white.svg'}">
+    <img class="mb-4 img-fluid d-lg-none w-100" style="max-width: 30rem;" alt="Logo" th:src="${'/images/dke_quer_' + #locale + '_white.svg'}">
+    <h1 class="h3 text-center " th:text="#{etutor.title}"></h1>
+
+    <div class="d-flex justify-content-center pt-4">
+        <a th:text="#{banner.impress}" class="text-white text-decoration-none fw-normal"
+           th:href="'http://dke.jku.at/legal_notice.html?lang=' + ${#locale}" target="_blank"></a>
+    </div>
+</div>
+</body>
+</html>

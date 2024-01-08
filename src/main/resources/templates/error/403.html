@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout/main}">
+<head>
+    <title th:text="#{error.forbidden.title}"></title>
+</head>
+<body layout:fragment="content">
+<div class="card no-space shadow">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-12 col-lg-5 bg-black p-4 text-white position-relative" th:insert="~{fragments/banner.html :: banner}"></div>
+
+            <div class="col-12 col-lg-7 text-start p-4">
+                <h1 th:text="#{error.forbidden.title}"></h1>
+                <p th:text="#{error.forbidden.text}"></p>
+
+                <a class="btn btn-outline-primary w-100 mt-5" th:text="#{error.toIndex}" th:href="@{/}"></a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

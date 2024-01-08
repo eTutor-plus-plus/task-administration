@@ -1,0 +1,24 @@
+version: '3'
+
+networks:
+  etutor-net:
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      - 'POSTGRES_DB=etutor'
+      - 'POSTGRES_PASSWORD=secret'
+      - 'POSTGRES_USER=etutor_admin'
+    ports:
+      - '5432'
+    networks:
+      - etutor-net
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    networks:
+      - etutor-net

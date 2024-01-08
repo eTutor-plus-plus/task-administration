@@ -1,0 +1,87 @@
+spring:
+  application:
+    name: eTutor Task-Administration
+  main:
+    allow-bean-definition-overriding: true
+  messages:
+    fallback-to-system-locale: false
+
+  # Database
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+
+  # Server
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  mvc:
+    format:
+      date-time: iso
+    problemdetails:
+      enabled: true
+
+# Server
+server:
+  port: 8080
+  servlet:
+    session:
+      cookie:
+        name: etutor_task_admin
+
+# API docs
+springdoc:
+  #show-actuator: true
+  swagger-ui:
+    path: /docs
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    path: /api-docs
+
+# Logging
+logging:
+  include-application-name: false
+  logback:
+    rollingpolicy:
+      file-name-pattern: logs/task-administration.%d{yyyy-MM-dd}.%i.log
+      max-file-size: 50MB
+      max-history: 14
+  file:
+    name: logs/task-administration.log
+
+# Actuator
+management:
+  info:
+    os:
+      enabled: true
+    java:
+      enabled: true
+    git:
+      mode: full
+  endpoint:
+    env:
+      show-values: ALWAYS
+  endpoints:
+    web:
+      exposure:
+        include:
+          - env
+          - flyway
+          - health
+          - httpexchanges
+          - info
+          - logfile
+          - metrics
+          - scheduledtasks
+
+# JWT configuration
+jwt:
+  private-key: private.pem
+  public-key: public.pem
+  token-lifetime: 300
+  refresh-token-lifetime: 400

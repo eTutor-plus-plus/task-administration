@@ -1,0 +1,37 @@
+# Logging
+logging:
+  level:
+    ROOT: info
+
+# Server
+server:
+  shutdown: GRACEFUL
+
+# Springdoc
+springdoc:
+  api-docs:
+    enabled: false
+
+# Spring
+spring:
+  jpa:
+    show-sql: false
+
+# Specify the following settings via environment variables in the docker container.
+#spring:
+#  # Database
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/etutor
+#    username: etutor
+#    password: TBD
+#  flyway:
+#    user: etutor_admin
+#    password: TBD+
+#
+#  # Mail
+#  mail:
+#    sender: etutor@dke.uni-linz.ac.at
+#    host: localhost
+#    port: 25
+#    username:
+#    password:

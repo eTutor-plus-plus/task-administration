@@ -1,0 +1,25 @@
+# Logging
+logging:
+  level:
+    ROOT: info
+    at.jku.dke: trace
+
+spring:
+  # Database
+  datasource:
+    url: jdbc:postgresql://localhost:5432/etutor
+    username: etutor
+    password: etutor_pwd
+  jpa:
+    show-sql: true
+  flyway:
+    user: etutor_admin
+    password: secret
+
+  # Mail
+  mail:
+    sender: etutor@dke.uni-linz.ac.at
+    host: localhost
+    port: 1025
+    username:
+    password:

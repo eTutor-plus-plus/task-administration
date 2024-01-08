@@ -1,0 +1,9 @@
+# Logging
+logging:
+  level:
+    ROOT: info
+    at.jku.dke: debug
+
+spring:
+  mail:
+    sender: test@example.com
