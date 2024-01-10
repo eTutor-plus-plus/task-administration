@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -28,6 +29,7 @@ import java.time.Instant;
 @RestController
 @RequestMapping("/api/taskApp")
 @Tag(name = "Task App", description = "Manage task apps")
+@Validated
 public class TaskAppController {
 
     private final TaskAppService taskAppService;

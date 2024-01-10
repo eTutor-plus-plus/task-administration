@@ -1,6 +1,6 @@
 package at.jku.dke.etutor.task_administration.dto.auth;
 
-import jakarta.validation.constraints.AssertTrue;
+import at.jku.dke.etutor.task_administration.validation.ValuesEquals;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
@@ -11,11 +11,8 @@ import jakarta.validation.constraints.Size;
  * @param password             The password.
  * @param passwordConfirmation The password confirmation.
  */
+@ValuesEquals(field1 = "password", field2 = "passwordConfirmation")
 public record SetPasswordRequest(@NotEmpty String token,
                                  @Size(min = 6, max = 64) @NotEmpty String password,
                                  @NotEmpty String passwordConfirmation) {
-    @AssertTrue(message = "{jakarta.validation.constraints.ValueEquals.message}")
-    private boolean isValid() {
-        return this.password != null && this.password.equals(this.passwordConfirmation);
-    }
 }
