@@ -7,14 +7,11 @@ logging:
 spring:
   # Database
   datasource:
-    url: jdbc:postgresql://localhost:5432/etutor
-    username: etutor
-    password: etutor_pwd
+    url: jdbc:postgresql://localhost:5433/etutor
+    username: etutor_admin
+    password: secret
   jpa:
     show-sql: true
-  flyway:
-    user: etutor_admin
-    password: secret
 
   # Mail
   mail:
