@@ -9,6 +9,7 @@ import at.jku.dke.etutor.task_administration.data.repositories.TaskGroupReposito
 import at.jku.dke.etutor.task_administration.data.repositories.TaskRepository;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
+import at.jku.dke.etutor.task_administration.dto.SubmitSubmissionDto;
 import at.jku.dke.etutor.task_administration.dto.TaskDto;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -26,6 +27,7 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -280,6 +282,21 @@ public class TaskService {
             this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());
             this.repository.deleteById(id);
         }
+    }
+
+    /**
+     * Submits the specified submission.
+     *
+     * @param submission The submission.
+     * @return The submission response.
+     */
+    public Serializable submit(SubmitSubmissionDto submission) {
+        var task = this.repository.findById(submission.taskId()).orElseThrow(() -> new EntityNotFoundException("Task with id " + submission.taskId() + " does not exist"));
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(task.getOrganizationalUnit().getId()))
+            throw new EntityNotFoundException("Task with id " + submission.taskId() + " does not exist");
+
+        LOG.info("Submitting task {}", submission.taskId());
+        return this.taskAppCommunicationService.submit(task.getTaskType(), submission);
     }
 
     //#endregion

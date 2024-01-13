@@ -2,10 +2,7 @@ package at.jku.dke.etutor.task_administration.services;
 
 import at.jku.dke.etutor.task_administration.data.entities.TaskApp;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskAppRepository;
-import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
-import at.jku.dke.etutor.task_administration.dto.ModifyTaskGroupDto;
-import at.jku.dke.etutor.task_administration.dto.TaskGroupModificationResponseDto;
-import at.jku.dke.etutor.task_administration.dto.TaskModificationResponseDto;
+import at.jku.dke.etutor.task_administration.dto.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Streams;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -446,6 +444,38 @@ public class TaskAppCommunicationService {
     }
 
     //#endregion
+
+    /**
+     * Submits a submission for testing purposes.
+     *
+     * @param taskType   The task type.
+     * @param submission The submission data.
+     * @return The submission result.
+     */
+    public Serializable submit(String taskType, SubmitSubmissionDto submission) {
+        try {
+            var requestBuilder = this.prepareHttpRequest(taskType, "api/submission?persist=false&runInBackground=false");
+            if (requestBuilder == null)
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
+
+            LOG.info("Submitting task {} of type {}", submission.taskId(), taskType);
+            String json = this.objectMapper.writeValueAsString(submission);
+            HttpRequest request = requestBuilder
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+            try (HttpClient client = HttpClient.newBuilder().build()) {
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                return response.body();
+            }
+        } catch (URISyntaxException ex) {
+            LOG.error("Could not build URL to submit task.", ex);
+        } catch (IOException | InterruptedException ex) {
+            LOG.error("Request for for deleting task failed.", ex);
+            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for submitting task failed.", ex);
+        }
+        throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
+    }
 
     /**
      * Prepares an HTTP request for the specified task group type.

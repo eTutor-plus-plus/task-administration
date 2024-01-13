@@ -3,6 +3,7 @@ package at.jku.dke.etutor.task_administration.controllers;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
+import at.jku.dke.etutor.task_administration.dto.SubmitSubmissionDto;
 import at.jku.dke.etutor.task_administration.dto.TaskDto;
 import at.jku.dke.etutor.task_administration.services.TaskService;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,6 +23,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -173,5 +175,26 @@ public class TaskController {
     public ResponseEntity<Void> deleteTask(@PathVariable long id) {
         this.taskService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Submits a task for testing purpose.
+     *
+     * @param submissionDto The submission.
+     * @return The evaluation result.
+     */
+    @PostMapping(value = "/submit", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Submission evaluated"),
+        @ApiResponse(responseCode = "400", description = "Validation of task data failed.", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "403", description = "Operation not allowed", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "404", description = "Task not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "424", description = "Operation in task app failed", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "503", description = "Task does not support testing submissions", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+    })
+    public ResponseEntity<Serializable> submit(@Valid @RequestBody SubmitSubmissionDto submissionDto) {
+        var result = this.taskService.submit(submissionDto);
+        return ResponseEntity.ok(result);
     }
 }
