@@ -138,7 +138,20 @@ public class TaskGroupService {
         }
 
         taskGroup = this.repository.save(taskGroup);
-        this.taskAppCommunicationService.createTaskGroup(taskGroup.getId(), dto);
+        var result = this.taskAppCommunicationService.createTaskGroup(taskGroup.getId(), dto);
+        if (result != null) {
+            boolean modified = false;
+            if (result.descriptionDe() != null && taskGroup.getDescriptionDe().trim().isBlank()) {
+                taskGroup.setDescriptionDe(result.descriptionDe());
+                modified = true;
+            }
+            if (result.descriptionEn() != null && taskGroup.getDescriptionEn().trim().isBlank()) {
+                taskGroup.setDescriptionEn(result.descriptionEn());
+                modified = true;
+            }
+            if (modified)
+                this.repository.save(taskGroup);
+        }
 
         return taskGroup;
     }
@@ -187,7 +200,13 @@ public class TaskGroupService {
             }
         }
 
-        this.taskAppCommunicationService.updateTaskGroup(taskGroup.getId(), dto);
+        var result = this.taskAppCommunicationService.updateTaskGroup(taskGroup.getId(), dto);
+        if (result != null) {
+            if (result.descriptionDe() != null && taskGroup.getDescriptionDe().trim().isBlank())
+                taskGroup.setDescriptionDe(result.descriptionDe());
+            if (result.descriptionEn() != null && taskGroup.getDescriptionEn().trim().isBlank())
+                taskGroup.setDescriptionEn(result.descriptionEn());
+        }
         this.repository.save(taskGroup);
     }
 

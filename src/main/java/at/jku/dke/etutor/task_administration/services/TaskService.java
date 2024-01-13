@@ -26,12 +26,12 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * This class provides methods for managing {@link Task}s.
@@ -160,7 +160,28 @@ public class TaskService {
         }
 
         task = this.repository.save(task);
-        this.taskAppCommunicationService.createTask(task.getId(), dto);
+        var result = this.taskAppCommunicationService.createTask(task.getId(), dto);
+        if (result != null) {
+            boolean modified = false;
+            if (result.descriptionDe() != null && task.getDescriptionDe().trim().isBlank()) {
+                task.setDescriptionDe(result.descriptionDe());
+                modified = true;
+            }
+            if (result.descriptionEn() != null && task.getDescriptionEn().trim().isBlank()) {
+                task.setDescriptionEn(result.descriptionEn());
+                modified = true;
+            }
+            if (result.difficulty() != null && result.difficulty() >= 1 && result.difficulty() <= 4) {
+                task.setDifficulty(result.difficulty());
+                modified = true;
+            }
+            if (result.maxPoints() != null && result.maxPoints().compareTo(BigDecimal.ZERO) > 0) {
+                task.setMaxPoints(result.maxPoints());
+                modified = true;
+            }
+            if (modified)
+                this.repository.save(task);
+        }
 
         return task;
     }
@@ -224,7 +245,18 @@ public class TaskService {
             }
         }
 
-        this.taskAppCommunicationService.updateTask(task.getId(), dto);
+        var result = this.taskAppCommunicationService.updateTask(task.getId(), dto);
+        if (result != null) {
+            if (result.descriptionDe() != null && task.getDescriptionDe().trim().isBlank())
+                task.setDescriptionDe(result.descriptionDe());
+            if (result.descriptionEn() != null && task.getDescriptionEn().trim().isBlank())
+                task.setDescriptionEn(result.descriptionEn());
+            if (result.difficulty() != null && result.difficulty() >= 1 && result.difficulty() <= 4)
+                task.setDifficulty(result.difficulty());
+            if (result.maxPoints() != null && result.maxPoints().compareTo(BigDecimal.ZERO) > 0)
+                task.setMaxPoints(result.maxPoints());
+        }
+
         this.repository.save(task);
     }
 

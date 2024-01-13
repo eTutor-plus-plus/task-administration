@@ -4,6 +4,8 @@ import at.jku.dke.etutor.task_administration.data.entities.TaskApp;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskAppRepository;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskGroupDto;
+import at.jku.dke.etutor.task_administration.dto.TaskGroupModificationResponseDto;
+import at.jku.dke.etutor.task_administration.dto.TaskModificationResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Streams;
 import jakarta.servlet.http.HttpServletRequest;
@@ -90,13 +92,14 @@ public class TaskAppCommunicationService {
      *
      * @param id   The identifier of the task group.
      * @param data The data for the task group.
+     * @return The response data received from the task app.
      * @throws ResponseStatusException If the request failed.
      */
-    public void createTaskGroup(long id, ModifyTaskGroupDto data) {
+    public TaskGroupModificationResponseDto createTaskGroup(long id, ModifyTaskGroupDto data) {
         try {
             var requestBuilder = this.prepareHttpRequest(data.taskGroupType(), "api/taskGroup/" + id);
             if (requestBuilder == null)
-                return;
+                return null;
 
             LOG.info("Creating task group {} of type {}.", id, data.taskGroupType());
             String json = this.objectMapper.writeValueAsString(data);
@@ -110,6 +113,7 @@ public class TaskAppCommunicationService {
                     LOG.error("Request for creating task group failed with status code {} and body {}.", response.statusCode(), response.body());
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task group failed.");
                 }
+                return this.objectMapper.readValue(response.body(), TaskGroupModificationResponseDto.class);
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to create new task group.", ex);
@@ -117,6 +121,7 @@ public class TaskAppCommunicationService {
             LOG.error("Request for for creating task group failed.", ex);
             throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task group failed.", ex);
         }
+        return null;
     }
 
     /**
@@ -124,13 +129,14 @@ public class TaskAppCommunicationService {
      *
      * @param id   The identifier of the task group.
      * @param data The data for the task group.
+     * @return The response data received from the task app.
      * @throws ResponseStatusException If the request failed.
      */
-    public void updateTaskGroup(long id, ModifyTaskGroupDto data) {
+    public TaskGroupModificationResponseDto updateTaskGroup(long id, ModifyTaskGroupDto data) {
         try {
             var requestBuilder = this.prepareHttpRequest(data.taskGroupType(), "api/taskGroup/" + id);
             if (requestBuilder == null)
-                return;
+                return null;
 
             LOG.info("Updating task group {} of type {}.", id, data.taskGroupType());
             String json = this.objectMapper.writeValueAsString(data);
@@ -144,6 +150,7 @@ public class TaskAppCommunicationService {
                     LOG.error("Request for updating task group failed with status code {} and body {}.", response.statusCode(), response.body());
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task group failed.");
                 }
+                return this.objectMapper.readValue(response.body(), TaskGroupModificationResponseDto.class);
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to update existing task group.", ex);
@@ -151,6 +158,7 @@ public class TaskAppCommunicationService {
             LOG.error("Request for for updating task group failed.", ex);
             throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task group failed.", ex);
         }
+        return null;
     }
 
     /**
@@ -229,13 +237,14 @@ public class TaskAppCommunicationService {
      *
      * @param id   The identifier of the task.
      * @param data The data for the task.
+     * @return The response data received from the task app.
      * @throws ResponseStatusException If the request failed.
      */
-    public void createTask(long id, ModifyTaskDto data) {
+    public TaskModificationResponseDto createTask(long id, ModifyTaskDto data) {
         try {
             var requestBuilder = this.prepareHttpRequest(data.taskType(), "api/task/" + id);
             if (requestBuilder == null)
-                return;
+                return null;
 
             LOG.info("Creating task {} of type {}.", id, data.taskType());
             String json = this.objectMapper.writeValueAsString(data);
@@ -249,6 +258,7 @@ public class TaskAppCommunicationService {
                     LOG.error("Request for creating task failed with status code {} and body {}.", response.statusCode(), response.body());
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task failed.");
                 }
+                return this.objectMapper.readValue(response.body(), TaskModificationResponseDto.class);
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to create new task.", ex);
@@ -256,6 +266,7 @@ public class TaskAppCommunicationService {
             LOG.error("Request for for creating task failed.", ex);
             throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task failed.", ex);
         }
+        return null;
     }
 
     /**
@@ -263,13 +274,14 @@ public class TaskAppCommunicationService {
      *
      * @param id   The identifier of the task.
      * @param data The data for the task.
+     * @return The response data received from the task app.
      * @throws ResponseStatusException If the request failed.
      */
-    public void updateTask(long id, ModifyTaskDto data) {
+    public TaskModificationResponseDto updateTask(long id, ModifyTaskDto data) {
         try {
             var requestBuilder = this.prepareHttpRequest(data.taskType(), "api/task/" + id);
             if (requestBuilder == null)
-                return;
+                return null;
 
             LOG.info("Updating task {} of type {}.", id, data.taskType());
             String json = this.objectMapper.writeValueAsString(data);
@@ -279,10 +291,11 @@ public class TaskAppCommunicationService {
                 .build();
             try (HttpClient client = HttpClient.newBuilder().build()) {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() != 204) {
+                if (response.statusCode() != 200) {
                     LOG.error("Request for updating task failed with status code {} and body {}.", response.statusCode(), response.body());
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task failed.");
                 }
+                return this.objectMapper.readValue(response.body(), TaskModificationResponseDto.class);
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to update existing task.", ex);
@@ -290,6 +303,7 @@ public class TaskAppCommunicationService {
             LOG.error("Request for for updating task failed.", ex);
             throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task failed.", ex);
         }
+        return null;
     }
 
     /**

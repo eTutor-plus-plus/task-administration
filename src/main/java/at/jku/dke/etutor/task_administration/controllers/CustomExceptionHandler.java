@@ -155,6 +155,21 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * Handle exceptions of type {@link ValidationException}.
+     *
+     * @param ex      The exception to handle.
+     * @param request The current request.
+     * @return The response entity.
+     */
+    @ExceptionHandler({ValidationException.class})
+    public ResponseEntity<Object> handleValidationException(ValidationException ex, WebRequest request) {
+        String detail = ex.getLocalizedMessage();
+        var body = this.createProblemDetail(ex, HttpStatus.BAD_REQUEST, detail, null, null, request);
+        body.setType(URI.create(BASE_URL + "validation-error"));
+        return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    /**
      * Handle exceptions of type {@link DataIntegrityViolationException}.
      *
      * @param ex      The exception to handle.
