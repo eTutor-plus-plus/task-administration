@@ -79,8 +79,11 @@ public class SecurityConfig {
             reg.requestMatchers(HttpMethod.OPTIONS).permitAll();
 
             // Actuator
-            reg.requestMatchers("/actuator/**").hasAuthority(AuthConstants.ROLE_FULL_ADMIN);
             reg.requestMatchers("/actuator/health").permitAll();
+            reg.requestMatchers("/actuator/health/liveness").permitAll();
+            reg.requestMatchers("/actuator/health/readiness").permitAll();
+            reg.requestMatchers("/actuator/info").authenticated();
+            reg.requestMatchers("/actuator/**").hasAuthority(AuthConstants.ROLE_FULL_ADMIN);
 
             // AUTH
             reg.requestMatchers("/auth/refresh").authenticated();

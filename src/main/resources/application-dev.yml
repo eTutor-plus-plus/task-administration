@@ -20,3 +20,7 @@ spring:
     port: 1025
     username:
     password:
+
+jwt:
+  token-lifetime: 900
+  refresh-token-lifetime: 1500
