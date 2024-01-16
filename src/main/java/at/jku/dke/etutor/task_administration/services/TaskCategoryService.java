@@ -7,6 +7,7 @@ import at.jku.dke.etutor.task_administration.data.repositories.OrganizationalUni
 import at.jku.dke.etutor.task_administration.data.repositories.TaskCategoryRepository;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskCategoryDto;
 import at.jku.dke.etutor.task_administration.dto.TaskCategoryDto;
+import at.jku.dke.etutor.task_administration.moodle.QuestionCategoryService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -36,16 +37,20 @@ public class TaskCategoryService {
 
     private final TaskCategoryRepository repository;
     private final OrganizationalUnitRepository organizationalUnitRepository;
+    private final QuestionCategoryService questionCategoryService;
 
     /**
      * Creates a new instance of class {@link TaskCategoryService}.
      *
      * @param repository                   The task category repository.
      * @param organizationalUnitRepository The organizational unit repository.
+     * @param questionCategoryService      The question category service.
      */
-    public TaskCategoryService(TaskCategoryRepository repository, OrganizationalUnitRepository organizationalUnitRepository) {
+    public TaskCategoryService(TaskCategoryRepository repository, OrganizationalUnitRepository organizationalUnitRepository,
+                               QuestionCategoryService questionCategoryService) {
         this.repository = repository;
         this.organizationalUnitRepository = organizationalUnitRepository;
+        this.questionCategoryService = questionCategoryService;
     }
 
     //#region --- View ---
@@ -105,6 +110,7 @@ public class TaskCategoryService {
         taskCategory.setName(dto.name());
         taskCategory.setOrganizationalUnit(this.organizationalUnitRepository.getReferenceById(dto.organizationalUnitId()));
         taskCategory = this.repository.save(taskCategory);
+        this.createMoodleObjectsForTaskCategory(taskCategory);
 
         return taskCategory;
     }
@@ -158,6 +164,27 @@ public class TaskCategoryService {
             LOG.info("Deleting task category {}", id);
             this.repository.delete(taskCategory);
         }
+    }
+
+    //#endregion
+
+    //#region --- Moodle ---
+
+    /**
+     * Called when task category has been created.
+     *
+     * @param category The task category.
+     */
+    public void createMoodleObjectsForTaskCategory(TaskCategory category) {
+        if (category.getMoodleId() != null)
+            return;
+
+        this.questionCategoryService.createQuestionCategory(category).thenAccept(moodleId -> {
+            if (moodleId.isPresent()) {
+                category.setMoodleId(moodleId.get());
+                this.repository.save(category);
+            }
+        });
     }
 
     //#endregion

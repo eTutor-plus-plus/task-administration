@@ -32,6 +32,9 @@ public class TaskCategory extends AuditedEntity {
     @JoinColumn(name = "ou_id", nullable = false)
     private OrganizationalUnit organizationalUnit;
 
+    @Column(name = "moodle_id")
+    private Integer moodleId;
+
     @OneToMany(mappedBy = "parent")
     private Set<TaskCategory> children = new LinkedHashSet<>();
 
@@ -96,6 +99,24 @@ public class TaskCategory extends AuditedEntity {
      */
     public void setOrganizationalUnit(OrganizationalUnit organizationalUnit) {
         this.organizationalUnit = organizationalUnit;
+    }
+
+    /**
+     * Gets the moodle identifier (question category).
+     *
+     * @return The moodle identifier (question category).
+     */
+    public Integer getMoodleId() {
+        return moodleId;
+    }
+
+    /**
+     * Sets the moodle identifier (question category).
+     *
+     * @param moodleId The moodle identifier (question category).
+     */
+    public void setMoodleId(Integer moodleId) {
+        this.moodleId = moodleId;
     }
 
     /**

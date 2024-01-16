@@ -28,5 +28,5 @@ jwt:
 
 # Moodle
 moodle:
-  token: 7c64718cf68f89ea066cf86e1b2a22d3
+  token: 97ce0215d3b4c7b5869e0b0d65ca05c8
   url: http://localhost:8000/

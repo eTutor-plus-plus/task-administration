@@ -24,6 +24,8 @@ docker run -p 8080:8080 \
   -e SPRING_MAIL_PORT=587 \
   -e SPRING_MAIL_USERNAME=etutor \
   -e SPRING_MAIL_PASSWORD=myPwd \
+  -e MOODLE_TOKEN=tbd \
+  -e MOODLE_URL=https://moodle.etutor.dke.uni-linz.ac.at/ \
   etutorplusplus/task-administration
 ```
 
@@ -50,6 +52,8 @@ services:
             SPRING_MAIL_PORT: 587
             SPRING_MAIL_USERNAME: etutor
             SPRING_MAIL_PASSWORD: myPwd
+            MOODLE_TOKEN: tbd
+            MOODLE_URL: https://moodle.etutor.dke.uni-linz.ac.at/
 ```
 
 ### Environment Variables
@@ -76,3 +80,5 @@ The users must be configured via environment variables. The clients have to be c
 | `SPRING_MAIL_PORT`           | The port of the SMTP server.                       |
 | `SPRING_MAIL_USERNAME`       | The username of the SMTP server.                   |
 | `SPRING_MAIL_PASSWORD`       | The password of the SMTP server.                   |
+| `MOODLE_TOKEN`               | The token for the moodle webservice.               |
+| `MOODLE_URL`                 | The URL to the moodle.                             |
