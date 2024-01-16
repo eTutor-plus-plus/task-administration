@@ -21,6 +21,12 @@ spring:
     username:
     password:
 
+# JWT
 jwt:
-  token-lifetime: 900
-  refresh-token-lifetime: 1500
+  token-lifetime: 1800
+  refresh-token-lifetime: 2000
+
+# Moodle
+moodle:
+  token: 7c64718cf68f89ea066cf86e1b2a22d3
+  url: http://localhost:8000/

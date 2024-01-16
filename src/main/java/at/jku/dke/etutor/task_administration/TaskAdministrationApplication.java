@@ -2,11 +2,13 @@ package at.jku.dke.etutor.task_administration;
 
 import at.jku.dke.etutor.task_administration.data.entities.User;
 import at.jku.dke.etutor.task_administration.data.repositories.UserRepository;
+import at.jku.dke.etutor.task_administration.moodle.MoodleConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 
@@ -19,6 +21,7 @@ import java.util.Optional;
  * The main class of the application.
  */
 @SpringBootApplication
+@EnableConfigurationProperties(MoodleConfig.class)
 public class TaskAdministrationApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(TaskAdministrationApplication.class);
