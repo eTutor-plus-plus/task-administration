@@ -3,7 +3,6 @@ package at.jku.dke.etutor.task_administration.moodle;
 import at.jku.dke.etutor.task_administration.data.entities.OrganizationalUnit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -12,7 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 /**
  * Service for managing moodle course categories.
@@ -38,6 +36,9 @@ public class CourseCategoryService extends MoodleService {
      */
     @Async
     public CompletableFuture<Optional<Integer>> createCourseCategory(OrganizationalUnit organizationalUnit) {
+        if (!this.config.isEnabled())
+            return CompletableFuture.completedFuture(Optional.empty());
+
         LOG.info("Creating course category for organizational unit {}.", organizationalUnit.getId());
         Map<String, String> body = new HashMap<>();
         body.put("categories[0][name]", organizationalUnit.getName());
@@ -65,6 +66,8 @@ public class CourseCategoryService extends MoodleService {
      */
     @Async
     public void updateCourseCategory(OrganizationalUnit organizationalUnit) {
+        if (!this.config.isEnabled())
+            return;
         if (organizationalUnit.getMoodleId() == null)
             return;
 

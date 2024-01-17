@@ -18,6 +18,8 @@ public class MoodleConfig {
     @URL
     private String url;
 
+    private boolean enabled;
+
     /**
      * Creates a new instance of class {@link MoodleConfig}.
      */
@@ -58,5 +60,23 @@ public class MoodleConfig {
      */
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    /**
+     * Returns whether the moodle synchronization is enabled.
+     *
+     * @return {@code true} if enabled; {@code false} otherwise.
+     */
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    /**
+     * Sets whether the moodle synchronization is enabled.
+     *
+     * @param enabled {@code true} if enabled; {@code false} otherwise.
+     */
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }

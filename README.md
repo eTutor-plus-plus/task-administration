@@ -26,6 +26,7 @@ docker run -p 8080:8080 \
   -e SPRING_MAIL_PASSWORD=myPwd \
   -e MOODLE_TOKEN=tbd \
   -e MOODLE_URL=https://moodle.etutor.dke.uni-linz.ac.at/ \
+  -e MOODLE_ENABLED=true \
   etutorplusplus/task-administration
 ```
 
@@ -54,6 +55,7 @@ services:
             SPRING_MAIL_PASSWORD: myPwd
             MOODLE_TOKEN: tbd
             MOODLE_URL: https://moodle.etutor.dke.uni-linz.ac.at/
+            MOODLE_ENABLED: true
 ```
 
 ### Environment Variables
@@ -82,3 +84,4 @@ The users must be configured via environment variables. The clients have to be c
 | `SPRING_MAIL_PASSWORD`       | The password of the SMTP server.                   |
 | `MOODLE_TOKEN`               | The token for the moodle webservice.               |
 | `MOODLE_URL`                 | The URL to the moodle.                             |
+| `MOODLE_ENABLED`             | Whether the moodle synchronization is enabled.     |

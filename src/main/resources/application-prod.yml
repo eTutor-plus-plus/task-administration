@@ -38,5 +38,6 @@ spring:
 #
 # # Moodle
 #moodle:
+#  enabled: true
 #  token: TBD
 #  url: https://dkemoodle.dke.uni-linz.ac.at/
