@@ -144,7 +144,9 @@ public class TaskCategoryService {
         taskCategory.setName(dto.name());
         taskCategory.setOrganizationalUnit(this.organizationalUnitRepository.getReferenceById(dto.organizationalUnitId()));
         taskCategory.setParent(dto.parentId() == null ? null : this.repository.getReferenceById(dto.parentId()));
-        this.repository.save(taskCategory);
+        taskCategory = this.repository.save(taskCategory);
+
+        this.updateMoodleObjectsForOrganizationalUnit(taskCategory);
     }
 
     /**
@@ -185,6 +187,15 @@ public class TaskCategoryService {
                 this.repository.save(category);
             }
         });
+    }
+
+    /**
+     * Called when task category has been updated.
+     *
+     * @param category The task category.
+     */
+    public void updateMoodleObjectsForOrganizationalUnit(TaskCategory category) {
+        this.questionCategoryService.updateQuestionCategory(category);
     }
 
     //#endregion

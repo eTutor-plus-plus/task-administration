@@ -81,6 +81,48 @@ public class QuestionCategoryService extends MoodleService {
         }
     }
 
+    /**
+     * Updates an existing question category for the given task category.
+     *
+     * @param category The task category.
+     */
+    @Async
+    public void updateQuestionCategory(TaskCategory category) {
+        if (category.getMoodleId() == null)
+            return;
+
+        LOG.info("Updating question category for task category {}.", category.getId());
+
+        // Load data
+        OrganizationalUnit ou = this.ouRepository.findById(category.getOrganizationalUnit().getId()).orElseThrow();
+        TaskCategory parent = null;
+        if (category.getParent() != null)
+            parent = this.categoryRepository.findById(category.getParent().getId()).orElseThrow();
+        if (parent != null && parent.getMoodleId() == null) {
+            LOG.warn("Failed to update question category for task category {} because its parent has no moodle-id.", category.getId());
+            return;
+        }
+        if (ou.getMoodleId() == null) {
+            LOG.warn("Failed to update question category for task category {} because its organizational unit has no moodle-id.", category.getId());
+            return;
+        }
+
+        // Build body
+        Map<String, String> body = new HashMap<>();
+        body.put("data[course_category_id]", ou.getMoodleId().toString());
+        if (parent != null)
+            body.put("data[parent_question_category_id]", parent.getMoodleId().toString());
+        body.put("data[id]", category.getMoodleId().toString());
+        body.put("data[name]", category.getName());
+
+        // Send request
+        try {
+            this.post(getDefaultQueryParameters("local_etutorsync_update_question_category"), body);
+        } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
+            LOG.error("Failed to update question category for task category {}.", category.getId(), ex);
+        }
+    }
+
     private record QuestionCategory(int id) {
     }
 }
