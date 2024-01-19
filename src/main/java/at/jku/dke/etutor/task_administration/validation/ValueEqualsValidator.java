@@ -25,8 +25,21 @@ public class ValueEqualsValidator implements ConstraintValidator<ValuesEquals, O
 
     @Override
     public boolean isValid(Object value, ConstraintValidatorContext context) {
-        if (field1 == null && field2 == null)
-            return true;
-        return field1 != null && field1.equals(field2);
+        try {
+            var objField1 = value.getClass().getDeclaredField(this.field1);
+            var objField2 = value.getClass().getDeclaredField(this.field1);
+
+            objField1.setAccessible(true);
+            objField2.setAccessible(true);
+
+            var value1 = objField1.get(value);
+            var value2 = objField2.get(value);
+
+            if (value1 == null && value2 == null)
+                return true;
+            return value1 != null && value1.equals(value2);
+        } catch (NoSuchFieldException | IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

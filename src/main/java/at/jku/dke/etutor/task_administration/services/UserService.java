@@ -158,6 +158,7 @@ public class UserService {
             this.messageSource.getMessage("activateAccount.mail.subject", null, Locale.ENGLISH),
             this.messageSource.getMessage("activateAccount.mail.text", new Object[]{
                 String.format("%s %s", user.getFirstName(), user.getLastName()),
+                user.getUsername(),
                 ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString(),
                 token.getToken()
             }, Locale.ENGLISH));
