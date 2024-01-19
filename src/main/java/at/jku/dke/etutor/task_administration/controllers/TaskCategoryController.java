@@ -146,4 +146,22 @@ public class TaskCategoryController {
         this.taskCategoryService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Forces moodle synchronization for the task category.
+     *
+     * @param id The identifier of the task category to update.
+     * @return Accepted
+     */
+    @PostMapping(value = "/{id}")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "202", description = "Task category synchronization initiated"),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "403", description = "Operation not allowed", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "404", description = "Task category not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+    })
+    public ResponseEntity<Void> syncMoodle(@PathVariable long id) {
+        this.taskCategoryService.createMoodleObjectsForTaskCategory(id);
+        return ResponseEntity.accepted().build();
+    }
 }

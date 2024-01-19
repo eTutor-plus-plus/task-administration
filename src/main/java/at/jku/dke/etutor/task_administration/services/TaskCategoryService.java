@@ -198,6 +198,18 @@ public class TaskCategoryService {
         this.questionCategoryService.updateQuestionCategory(category);
     }
 
+    /**
+     * Creates a Moodle question category for the task category.
+     *
+     * @param id The task category id.
+     * @throws EntityNotFoundException If the task category does not exist.
+     */
+    @Transactional(readOnly = true)
+    public void createMoodleObjectsForTaskCategory(long id) {
+        var category = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Task category " + id + " does not exist."));
+        this.createMoodleObjectsForTaskCategory(category);
+    }
+
     //#endregion
 
     //#region --- Specifications ---

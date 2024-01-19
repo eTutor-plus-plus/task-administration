@@ -155,5 +155,17 @@ public class OrganizationalUnitService {
         this.courseCategoryService.updateCourseCategory(organizationalUnit);
     }
 
+    /**
+     * Synchronizes the organizational unit with the Moodle course category.
+     *
+     * @param id The organizational unit id.
+     * @throws EntityNotFoundException If the organizational unit does not exist.
+     */
+    @Transactional(readOnly = true)
+    public void createMoodleObjectsForOrganizationalUnit(long id) {
+        var organizationalUnit = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Organizational unit " + id + " does not exist."));
+        this.createMoodleObjectsForOrganizationalUnit(organizationalUnit);
+    }
+
     //#endregion
 }

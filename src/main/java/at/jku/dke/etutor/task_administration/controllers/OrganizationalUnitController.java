@@ -141,4 +141,22 @@ public class OrganizationalUnitController {
         this.organizationalUnitService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Forces moodle synchronization for the organizational unit.
+     *
+     * @param id The identifier of the organizational unit to update.
+     * @return Accepted
+     */
+    @PostMapping(value = "/{id}")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "202", description = "Organizational unit synchronization initiated"),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "403", description = "Operation not allowed", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "404", description = "Organizational unit not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+    })
+    public ResponseEntity<Void> syncMoodle(@PathVariable long id) {
+        this.organizationalUnitService.createMoodleObjectsForOrganizationalUnit(id);
+        return ResponseEntity.accepted().build();
+    }
 }
