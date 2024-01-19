@@ -157,12 +157,12 @@ public class TaskCategoryService {
     @Transactional
     @PreAuthorize(AuthConstants.AUTHORITY_INSTRUCTOR_OR_ABOVE)
     public void delete(long id) {
-        var orgs = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
+        var orgUnits = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
         var taskCategory = this.repository.findById(id).orElse(null);
         if (taskCategory == null)
             return;
 
-        if (SecurityHelpers.isFullAdmin() || orgs.contains(taskCategory.getOrganizationalUnit().getId())) {
+        if (SecurityHelpers.isFullAdmin() || orgUnits.contains(taskCategory.getOrganizationalUnit().getId())) {
             LOG.info("Deleting task category {}", id);
             this.repository.delete(taskCategory);
         }
@@ -217,8 +217,8 @@ public class TaskCategoryService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -237,8 +237,8 @@ public class TaskCategoryService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

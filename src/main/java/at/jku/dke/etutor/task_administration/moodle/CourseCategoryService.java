@@ -36,7 +36,7 @@ public class CourseCategoryService extends MoodleService {
      */
     @Async
     public CompletableFuture<Optional<Integer>> createCourseCategory(OrganizationalUnit organizationalUnit) {
-        if (!this.config.isEnabled())
+        if (this.config.isDisabled())
             return CompletableFuture.completedFuture(Optional.empty());
 
         LOG.info("Creating course category for organizational unit {}.", organizationalUnit.getId());
@@ -66,7 +66,7 @@ public class CourseCategoryService extends MoodleService {
      */
     @Async
     public void updateCourseCategory(OrganizationalUnit organizationalUnit) {
-        if (!this.config.isEnabled())
+        if (this.config.isDisabled())
             return;
         if (organizationalUnit.getMoodleId() == null)
             return;

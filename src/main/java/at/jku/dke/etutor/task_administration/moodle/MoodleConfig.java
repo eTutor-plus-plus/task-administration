@@ -72,6 +72,15 @@ public class MoodleConfig {
     }
 
     /**
+     * Returns whether the moodle synchronization is disabled.
+     *
+     * @return {@code true} if disabled; {@code false} otherwise.
+     */
+    public boolean isDisabled() {
+        return !enabled;
+    }
+
+    /**
      * Sets whether the moodle synchronization is enabled.
      *
      * @param enabled {@code true} if enabled; {@code false} otherwise.

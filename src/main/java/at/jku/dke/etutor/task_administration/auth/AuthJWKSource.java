@@ -144,8 +144,8 @@ public class AuthJWKSource {
 
         // private
         var privateKeyString = Files.readString(this.privateKeyPath);
-        var prkb = Base64.getDecoder().decode(privateKeyString);
-        EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(prkb);
+        var decodedKey = Base64.getDecoder().decode(privateKeyString);
+        EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(decodedKey);
         this.privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
     }
 }

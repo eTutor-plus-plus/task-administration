@@ -27,7 +27,7 @@ public class ValueEqualsValidator implements ConstraintValidator<ValuesEquals, O
     public boolean isValid(Object value, ConstraintValidatorContext context) {
         try {
             var objField1 = value.getClass().getDeclaredField(this.field1);
-            var objField2 = value.getClass().getDeclaredField(this.field1);
+            var objField2 = value.getClass().getDeclaredField(this.field2);
 
             objField1.setAccessible(true);
             objField2.setAccessible(true);

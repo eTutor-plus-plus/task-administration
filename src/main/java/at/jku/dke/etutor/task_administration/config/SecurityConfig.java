@@ -97,13 +97,11 @@ public class SecurityConfig {
 
         http.sessionManagement(conf -> conf.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        http.oauth2ResourceServer(conf -> {
-            conf.jwt(jwtConf -> {
-                jwtConf.decoder(jwtDecoder);
-                jwtConf.jwkSetUri(TaskAdministrationApplication.determineLocalAddress(env) + "auth/jwk");
-                jwtConf.jwtAuthenticationConverter(customJwtAuthenticationConverter());
-            });
-        });
+        http.oauth2ResourceServer(conf -> conf.jwt(jwtConf -> {
+            jwtConf.decoder(jwtDecoder);
+            jwtConf.jwkSetUri(TaskAdministrationApplication.determineLocalAddress(env) + "auth/jwk");
+            jwtConf.jwtAuthenticationConverter(customJwtAuthenticationConverter());
+        }));
 
         return http.build();
     }

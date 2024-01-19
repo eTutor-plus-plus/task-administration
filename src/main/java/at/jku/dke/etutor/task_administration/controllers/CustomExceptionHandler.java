@@ -34,7 +34,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     /**
      * The base URL for problem details types.
      */
-    protected static final String BASE_URL = "http://etutor.dke.uni-linz.ac.at/errors/";
+    protected static final String BASE_URL = "https://etutor.dke.uni-linz.ac.at/errors/";
 
     /**
      * Creates a new instance of class {@link CustomExceptionHandler}.
@@ -178,9 +178,9 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({DataIntegrityViolationException.class})
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex, WebRequest request) {
         String detail = ex.getLocalizedMessage();
-        if (ex.getRootCause() instanceof SQLException sqex) {
+        if (ex.getRootCause() instanceof SQLException sqlEx) {
             SQLExceptionTranslator t = new SQLErrorCodeSQLExceptionTranslator();
-            var tmp = t.translate("Executing SQL Statement", null, sqex);
+            var tmp = t.translate("Executing SQL Statement", null, sqlEx);
             if (tmp != null)
                 detail = tmp.getLocalizedMessage();
         }

@@ -46,7 +46,7 @@ public class QuestionCategoryService extends MoodleService {
      */
     @Async
     public CompletableFuture<Optional<Integer>> createQuestionCategory(TaskCategory category) {
-        if (!this.config.isEnabled())
+        if (this.config.isDisabled())
             return CompletableFuture.completedFuture(Optional.empty());
 
         LOG.info("Creating question category for task category {}.", category.getId());
@@ -91,7 +91,7 @@ public class QuestionCategoryService extends MoodleService {
      */
     @Async
     public void updateQuestionCategory(TaskCategory category) {
-        if (!this.config.isEnabled())
+        if (this.config.isDisabled())
             return;
         if (category.getMoodleId() == null)
             return;

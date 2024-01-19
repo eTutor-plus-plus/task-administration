@@ -104,10 +104,10 @@ public class UserService {
     @Transactional(readOnly = true)
     public Optional<UserDto> getUser(long id) {
         LOG.debug("Loading user {}", id);
-        var orgs = SecurityHelpers.getOrganizationalUnitsAsAdmin();
+        var orgUnit = SecurityHelpers.getOrganizationalUnitsAsAdmin();
         return SecurityHelpers.isFullAdmin() ?
             this.repository.findById(id).map(UserDto::new) :
-            this.repository.findByIdOfOrganizationUnits(id, orgs).map(d -> new UserDto(d, orgs));
+            this.repository.findByIdOfOrganizationUnits(id, orgUnit).map(d -> new UserDto(d, orgUnit));
     }
 
     //#endregion
@@ -188,7 +188,7 @@ public class UserService {
         var ous = this.organizationalUnitUserRepository.findByUser_Id(user.getId()).stream()
             .filter(x -> fullAdmin || adminIds.contains(x.getId().getOrganizationalUnitId()))
             .toList();
-        if (!fullAdmin && adminIds.stream().noneMatch(ouid -> ous.stream().anyMatch(x -> x.getId().getOrganizationalUnitId().equals(ouid))))
+        if (!fullAdmin && adminIds.stream().noneMatch(ouId -> ous.stream().anyMatch(x -> x.getId().getOrganizationalUnitId().equals(ouId))))
             throw new EntityNotFoundException("User " + id + " does not exist.");
 
         // Update user
@@ -259,16 +259,16 @@ public class UserService {
             LOG.info("Deleting user {}", id);
             this.repository.deleteById(id);
         } else {
-            var orgs = SecurityHelpers.getOrganizationalUnitsAsAdmin();
+            var orgUnits = SecurityHelpers.getOrganizationalUnitsAsAdmin();
             var user = this.repository.findById(id).orElse(null);
             if (user == null)
                 return;
 
-            var ouu = user.getOrganizationalUnits().stream().filter(x -> orgs.contains(x.getOrganizationalUnit().getId())).toList();
-            if (ouu.size() == user.getOrganizationalUnits().size() && !user.getOrganizationalUnits().isEmpty() && !user.isFullAdmin()) { // user only exists for current orgs
+            var ouu = user.getOrganizationalUnits().stream().filter(x -> orgUnits.contains(x.getOrganizationalUnit().getId())).toList();
+            if (ouu.size() == user.getOrganizationalUnits().size() && !user.getOrganizationalUnits().isEmpty() && !user.isFullAdmin()) { // user only exists for current organizational unit
                 LOG.info("Deleting user {}", id);
                 this.repository.delete(user);
-            } else if (!ouu.isEmpty()) { // user also belongs to other orgs
+            } else if (!ouu.isEmpty()) { // user also belongs to other organizational units
                 LOG.info("Removing user {} from organizational units {}", id, ouu.stream().map(x -> x.getOrganizationalUnit().getId()).toList());
                 this.organizationalUnitUserRepository.deleteAll(ouu);
             }
