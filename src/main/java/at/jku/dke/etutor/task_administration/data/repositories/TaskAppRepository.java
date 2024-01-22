@@ -17,4 +17,12 @@ public interface TaskAppRepository extends JpaRepository<TaskApp, Long>, JpaSpec
      * @return The task app or an empty result.
      */
     Optional<TaskApp> findByTaskType(String taskType);
+
+    /**
+     * Returns whether a task app for the given task group type exists.
+     *
+     * @param taskType The task type.
+     * @return {@code true} if a task app for the given task group type exists, {@code false} otherwise.
+     */
+    boolean existsByTaskType(String taskType);
 }
