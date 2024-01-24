@@ -22,19 +22,19 @@ public abstract class AuditedEntity extends BaseEntity<Long> {
     private Long id;
 
     @CreatedBy
-    @Column(name = "created_by")
+    @Column(name = "created_by", nullable = false)
     private String createdBy;
 
     @CreatedDate
-    @Column(name = "created_date")
+    @Column(name = "created_date", nullable = false)
     private Instant createdDate;
 
     @LastModifiedBy
-    @Column(name = "last_modified_by")
+    @Column(name = "last_modified_by", nullable = false)
     private String lastModifiedBy;
 
     @LastModifiedDate
-    @Column(name = "last_modified_date")
+    @Column(name = "last_modified_date", nullable = false)
     private Instant lastModifiedDate;
 
     /**
