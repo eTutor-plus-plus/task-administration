@@ -402,6 +402,7 @@ public class TaskAppCommunicationService {
             .filter(h -> h.equalsIgnoreCase("accept") ||
                 h.equalsIgnoreCase("accept-language") ||
                 h.equalsIgnoreCase("accept-encoding") ||
+                h.equalsIgnoreCase("content-type") ||
                 h.toLowerCase().startsWith("x-"))
             .forEach(h -> requestBuilder.header(h, request.getHeader(h)));
 
