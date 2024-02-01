@@ -97,7 +97,7 @@ public class TaskAppCommunicationService {
         try {
             var requestBuilder = this.prepareHttpRequest(data.taskGroupType(), "api/taskGroup/" + id);
             if (requestBuilder == null)
-                return null;
+                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Unknown task group type.");
 
             LOG.info("Creating task group {} of type {}.", id, data.taskGroupType());
             String json = this.objectMapper.writeValueAsString(data);
@@ -242,7 +242,7 @@ public class TaskAppCommunicationService {
         try {
             var requestBuilder = this.prepareHttpRequest(data.taskType(), "api/task/" + id);
             if (requestBuilder == null)
-                return null;
+                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Unknown task type.");
 
             LOG.info("Creating task {} of type {}.", id, data.taskType());
             String json = this.objectMapper.writeValueAsString(data);
@@ -402,6 +402,7 @@ public class TaskAppCommunicationService {
             .filter(h -> h.equalsIgnoreCase("accept") ||
                 h.equalsIgnoreCase("accept-language") ||
                 h.equalsIgnoreCase("accept-encoding") ||
+                h.equalsIgnoreCase("content-type") ||
                 h.toLowerCase().startsWith("x-"))
             .forEach(h -> requestBuilder.header(h, request.getHeader(h)));
 

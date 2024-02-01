@@ -7,7 +7,7 @@ import jakarta.persistence.Converter;
 import java.util.stream.Stream;
 
 /**
- * Converts the database "statuss"-enum to the {@link TaskStatus} enum.
+ * Converts the database "status"-enum to the {@link TaskStatus} enum.
  */
 @Converter(autoApply = true)
 public class TaskStatusConverter implements AttributeConverter<TaskStatus, String> {

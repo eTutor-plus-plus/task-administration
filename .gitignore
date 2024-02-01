@@ -142,6 +142,7 @@ jspm_packages/
 .pnp.*
 
 ### CUSTOM ###
+.jpb/
 /logs
 public.pem
 private.pem

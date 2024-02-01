@@ -1,9 +1,6 @@
 package at.jku.dke.etutor.task_administration.data.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -21,6 +18,9 @@ public class OrganizationalUnit extends AuditedEntity {
     @NotNull
     @Column(name = "name", nullable = false)
     private String name;
+
+    @Column(name = "moodle_id")
+    private Integer moodleId;
 
     @OneToMany(mappedBy = "organizationalUnit")
     private Set<OrganizationalUnitUser> users = new LinkedHashSet<>();
@@ -65,6 +65,24 @@ public class OrganizationalUnit extends AuditedEntity {
      */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /**
+     * Gets the moodle identifier (course category).
+     *
+     * @return The moodle identifier (course category).
+     */
+    public Integer getMoodleId() {
+        return moodleId;
+    }
+
+    /**
+     * Sets the moodle identifier (course category).
+     *
+     * @param moodleId The moodle identifier (course category).
+     */
+    public void setMoodleId(Integer moodleId) {
+        this.moodleId = moodleId;
     }
 
     /**

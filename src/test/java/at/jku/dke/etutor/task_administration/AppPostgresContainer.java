@@ -51,4 +51,3 @@ public class AppPostgresContainer extends PostgreSQLContainer<AppPostgresContain
         super(IMAGE_NAME);
     }
 }
-// TODO: alle tests überarbeiten

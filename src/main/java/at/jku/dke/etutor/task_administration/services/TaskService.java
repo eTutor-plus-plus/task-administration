@@ -269,12 +269,12 @@ public class TaskService {
      */
     @Transactional
     public void delete(long id) {
-        var orgs = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
+        var orgUnit = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
         var task = this.repository.findById(id).orElse(null);
         if (task == null)
             return;
 
-        if (SecurityHelpers.isFullAdmin() || orgs.contains(task.getOrganizationalUnit().getId())) {
+        if (SecurityHelpers.isFullAdmin() || orgUnit.contains(task.getOrganizationalUnit().getId())) {
             if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
                 throw new InsufficientAuthenticationException("User is not allowed to delete the task");
 
@@ -322,8 +322,8 @@ public class TaskService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnits(); // TODO: prevent access also with ACLs
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnits();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -342,8 +342,8 @@ public class TaskService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnits();
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnits();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

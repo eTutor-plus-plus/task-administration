@@ -8,17 +8,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.time.Instant;
@@ -79,7 +78,7 @@ public class OrganizationalUnitController {
         var dto = this.organizationalUnitService.getOrganizationalUnit(id);
         return dto
             .map(ResponseEntity::ok)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new EntityNotFoundException("Organizational unit with id " + id + " does not exist."));
     }
 
     /**
@@ -141,5 +140,23 @@ public class OrganizationalUnitController {
     public ResponseEntity<Void> deleteOrganizationalUnit(@PathVariable long id) {
         this.organizationalUnitService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Forces moodle synchronization for the organizational unit.
+     *
+     * @param id The identifier of the organizational unit to update.
+     * @return Accepted
+     */
+    @PostMapping(value = "/{id}")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "202", description = "Organizational unit synchronization initiated"),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "403", description = "Operation not allowed", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "404", description = "Organizational unit not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+    })
+    public ResponseEntity<Void> syncMoodle(@PathVariable long id) {
+        this.organizationalUnitService.createMoodleObjectsForOrganizationalUnit(id);
+        return ResponseEntity.accepted().build();
     }
 }

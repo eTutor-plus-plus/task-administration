@@ -217,12 +217,12 @@ public class TaskGroupService {
      */
     @Transactional
     public void delete(long id) {
-        var orgs = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
+        var orgUnits = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
         var taskGroup = this.repository.findById(id).orElse(null);
         if (taskGroup == null)
             return;
 
-        if (SecurityHelpers.isFullAdmin() || orgs.contains(taskGroup.getOrganizationalUnit().getId())) {
+        if (SecurityHelpers.isFullAdmin() || orgUnits.contains(taskGroup.getOrganizationalUnit().getId())) {
             if (taskGroup.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(taskGroup.getOrganizationalUnit().getId()))
                 throw new InsufficientAuthenticationException("User is not allowed to delete the task group");
 
@@ -253,8 +253,8 @@ public class TaskGroupService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnits(); // TODO: prevent access also with ACLs
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnits();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -273,8 +273,8 @@ public class TaskGroupService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnits();
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnits();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
