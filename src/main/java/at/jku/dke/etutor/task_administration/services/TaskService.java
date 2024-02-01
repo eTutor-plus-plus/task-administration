@@ -34,6 +34,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * This class provides methods for managing {@link Task}s.
@@ -165,11 +166,11 @@ public class TaskService {
         var result = this.taskAppCommunicationService.createTask(task.getId(), dto);
         if (result != null) {
             boolean modified = false;
-            if (result.descriptionDe() != null && task.getDescriptionDe().trim().isBlank()) {
+            if (result.descriptionDe() != null && (task.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionDe()))) {
                 task.setDescriptionDe(result.descriptionDe());
                 modified = true;
             }
-            if (result.descriptionEn() != null && task.getDescriptionEn().trim().isBlank()) {
+            if (result.descriptionEn() != null && (task.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionEn()))) {
                 task.setDescriptionEn(result.descriptionEn());
                 modified = true;
             }
@@ -249,9 +250,9 @@ public class TaskService {
 
         var result = this.taskAppCommunicationService.updateTask(task.getId(), dto);
         if (result != null) {
-            if (result.descriptionDe() != null && task.getDescriptionDe().trim().isBlank())
+            if (result.descriptionDe() != null && (task.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionDe())))
                 task.setDescriptionDe(result.descriptionDe());
-            if (result.descriptionEn() != null && task.getDescriptionEn().trim().isBlank())
+            if (result.descriptionEn() != null && (task.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionEn())))
                 task.setDescriptionEn(result.descriptionEn());
             if (result.difficulty() != null && result.difficulty() >= 1 && result.difficulty() <= 4)
                 task.setDifficulty(result.difficulty());
