@@ -3,6 +3,8 @@ package at.jku.dke.etutor.task_administration.services;
 import at.jku.dke.etutor.task_administration.data.entities.TaskApp;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskAppRepository;
 import at.jku.dke.etutor.task_administration.dto.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Streams;
 import jakarta.servlet.http.HttpServletRequest;
@@ -73,6 +75,7 @@ public class TaskAppCommunicationService {
                     return this.objectMapper.readValue(response.body(), Map.class);
                 } else {
                     LOG.error("Request for additional data failed with status code {}.", response.statusCode());
+                    throwExceptionIfBodyContainsMessage(response, "Request for additional data failed");
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for additional data failed.");
                 }
             }
@@ -109,6 +112,7 @@ public class TaskAppCommunicationService {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() != 201) {
                     LOG.error("Request for creating task group failed with status code {} and body {}.", response.statusCode(), response.body());
+                    throwExceptionIfBodyContainsMessage(response, "Request for creating task group failed");
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task group failed.");
                 }
                 return this.objectMapper.readValue(response.body(), TaskGroupModificationResponseDto.class);
@@ -150,6 +154,7 @@ public class TaskAppCommunicationService {
                     return null;
 
                 LOG.error("Request for updating task group failed with status code {} and body {}.", response.statusCode(), response.body());
+                throwExceptionIfBodyContainsMessage(response, "Request for updating task group failed");
                 throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task group failed.");
             }
         } catch (URISyntaxException ex) {
@@ -182,6 +187,7 @@ public class TaskAppCommunicationService {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() != 204) {
                     LOG.error("Request for deleting task group failed with status code {} and body {}.", response.statusCode(), response.body());
+                    throwExceptionIfBodyContainsMessage(response, "Request for deleting task group failed");
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for deleting task group failed.");
                 }
             }
@@ -220,6 +226,7 @@ public class TaskAppCommunicationService {
                     return this.objectMapper.readValue(response.body(), Map.class);
                 } else {
                     LOG.error("Request for additional data failed with status code {}.", response.statusCode());
+                    throwExceptionIfBodyContainsMessage(response, "Request for additional data failed");
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for additional data failed.");
                 }
             }
@@ -256,6 +263,7 @@ public class TaskAppCommunicationService {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() != 201) {
                     LOG.error("Request for creating task failed with status code {} and body {}.", response.statusCode(), response.body());
+                    throwExceptionIfBodyContainsMessage(response, "Request for creating task failed");
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task failed.");
                 }
                 return this.objectMapper.readValue(response.body(), TaskModificationResponseDto.class);
@@ -293,6 +301,7 @@ public class TaskAppCommunicationService {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() != 200) {
                     LOG.error("Request for updating task failed with status code {} and body {}.", response.statusCode(), response.body());
+                    throwExceptionIfBodyContainsMessage(response, "Request for updating task failed");
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task failed.");
                 }
                 return this.objectMapper.readValue(response.body(), TaskModificationResponseDto.class);
@@ -327,6 +336,7 @@ public class TaskAppCommunicationService {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() != 204) {
                     LOG.error("Request for deleting task failed with status code {} and body {}.", response.statusCode(), response.body());
+                    throwExceptionIfBodyContainsMessage(response, "Request for deleting task failed");
                     throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for deleting task failed.");
                 }
             }
@@ -520,4 +530,13 @@ public class TaskAppCommunicationService {
         return this.taskAppRepository.findByTaskType(taskGroupType).orElse(null);
     }
 
+    private void throwExceptionIfBodyContainsMessage(HttpResponse<String> response, String messagePrefix) throws ResponseStatusException {
+        try {
+            Map<String, Object> body = this.objectMapper.readValue(response.body(), new TypeReference<>() {
+            });
+            if (body.containsKey("message"))
+                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, messagePrefix + ": " + body.get("message"));
+        } catch (JsonProcessingException ignored) {
+        }
+    }
 }
