@@ -5,12 +5,13 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 class UserDetailsImplTest {
 
     @Test
-    void testGetAuthoritiesEmpty() {
+    void getAuthorities_empty() {
         // Arrange
         var user = new User();
         var userDetails = new UserDetailsImpl(user);
@@ -19,11 +20,11 @@ class UserDetailsImplTest {
         var result = userDetails.getAuthorities();
 
         // Assert
-        assertEquals(0, result.size());
+        assertThat(result).isEmpty();
     }
 
     @Test
-    void testGetAuthorities() {
+    void getAuthorities_roles_containsInstructorAuthority() {
         // Arrange
         var ouUser = new OrganizationalUnitUser();
         ouUser.setRole(UserRole.INSTRUCTOR);
@@ -38,12 +39,13 @@ class UserDetailsImplTest {
         var result = userDetails.getAuthorities();
 
         // Assert
-        assertEquals(1, result.size());
-        assertTrue(result.stream().anyMatch(x -> x.getAuthority().equals(UserRole.INSTRUCTOR.name())));
+        assertThat(result)
+            .hasSize(1)
+            .anyMatch(x -> x.getAuthority().equals(AuthConstants.ROLE_INSTRUCTOR));
     }
 
     @Test
-    void testGetAuthoritiesFullAdmin() {
+    void getAuthorities_fullAdmin_containsFullAdminAuthority() {
         // Arrange
         var user = new User();
         user.setFullAdmin(true);
@@ -53,12 +55,13 @@ class UserDetailsImplTest {
         var result = userDetails.getAuthorities();
 
         // Assert
-        assertEquals(1, result.size());
-        assertTrue(result.stream().anyMatch(x -> x.getAuthority().equals(AuthConstants.ROLE_FULL_ADMIN)));
+        assertThat(result)
+            .hasSize(1)
+            .anyMatch(x -> x.getAuthority().equals(AuthConstants.ROLE_FULL_ADMIN));
     }
 
     @Test
-    void testGetPassword() {
+    void getPassword_returnPasswordHash() {
         // Arrange
         final String value = "test";
         var user = new User();
@@ -73,7 +76,7 @@ class UserDetailsImplTest {
     }
 
     @Test
-    void testGetUsername() {
+    void getUsername_returnUsername() {
         // Arrange
         final String value = "test";
         var user = new User();
@@ -88,7 +91,7 @@ class UserDetailsImplTest {
     }
 
     @Test
-    void testIsAccountNonExpired() {
+    void isAccountNonExpired_returnTrue() {
         // Arrange
         var user = new User();
         var userDetails = new UserDetailsImpl(user);
@@ -101,7 +104,7 @@ class UserDetailsImplTest {
     }
 
     @Test
-    void testIsAccountNonLockedNull() {
+    void isAccountNonLocked_nullLockoutEnd_returnTrue() {
         // Arrange
         var user = new User();
         var userDetails = new UserDetailsImpl(user);
@@ -114,7 +117,7 @@ class UserDetailsImplTest {
     }
 
     @Test
-    void testIsAccountNonLockedPast() {
+    void isAccountNonLocked_lockoutEndPast_returnTrue() {
         // Arrange
         var user = new User();
         user.setLockoutEnd(OffsetDateTime.now().minusDays(1));
@@ -128,7 +131,7 @@ class UserDetailsImplTest {
     }
 
     @Test
-    void testIsAccountNonLockedFuture() {
+    void isAccountNonLocked_lockoutEndFuture_returnFalse() {
         // Arrange
         var user = new User();
         user.setLockoutEnd(OffsetDateTime.now().plusDays(1));
@@ -142,7 +145,7 @@ class UserDetailsImplTest {
     }
 
     @Test
-    void testIsCredentialsNonExpiredNull() {
+    void isCredentialsNonExpired_nullActivationDate_returnTrue() {
         // Arrange
         var user = new User();
         var userDetails = new UserDetailsImpl(user);
@@ -155,7 +158,7 @@ class UserDetailsImplTest {
     }
 
     @Test
-    void testIsCredentialsNonExpiredPast() {
+    void isCredentialsNonExpired_pastActivationDate_returnFalse() {
         // Arrange
         var user = new User();
         user.setActivatedDate(OffsetDateTime.now().minusDays(1));
@@ -169,7 +172,7 @@ class UserDetailsImplTest {
     }
 
     @Test
-    void testIsCredentialsNonExpiredFuture() {
+    void isCredentialsNonExpired_futureActivationDate_returnFalse() {
         // Arrange
         var user = new User();
         user.setActivatedDate(OffsetDateTime.now().plusDays(1));
@@ -183,7 +186,7 @@ class UserDetailsImplTest {
     }
 
     @Test
-    void testIsEnabled() {
+    void isEnabled_returnEnabled() {
         // Arrange
         var user = new User();
         user.setEnabled(false);
