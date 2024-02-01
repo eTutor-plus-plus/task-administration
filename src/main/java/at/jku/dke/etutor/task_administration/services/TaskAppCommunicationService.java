@@ -144,11 +144,13 @@ public class TaskAppCommunicationService {
                 .build();
             try (HttpClient client = HttpClient.newBuilder().build()) {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() != 204) {
-                    LOG.error("Request for updating task group failed with status code {} and body {}.", response.statusCode(), response.body());
-                    throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task group failed.");
-                }
-                return this.objectMapper.readValue(response.body(), TaskGroupModificationResponseDto.class);
+                if (response.statusCode() == 200)
+                    return this.objectMapper.readValue(response.body(), TaskGroupModificationResponseDto.class);
+                if (response.statusCode() == 204)
+                    return null;
+
+                LOG.error("Request for updating task group failed with status code {} and body {}.", response.statusCode(), response.body());
+                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task group failed.");
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to update existing task group.", ex);
