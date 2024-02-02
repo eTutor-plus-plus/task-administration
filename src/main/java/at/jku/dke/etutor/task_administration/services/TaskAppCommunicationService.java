@@ -359,14 +359,16 @@ public class TaskAppCommunicationService {
      * Supported request-headers: {@code accept, content-type, accept-encoding, accept-language, X-*}
      * Supported response-headers: {@code content-type, content-language, content-disposition, X-}
      *
-     * @param taskType The task type.
-     * @param request  The request.
+     * @param taskType    The task type.
+     * @param request     The request.
+     * @param requestPath The path at the task app.
+     * @param secured     Whether the request should be authenticated.
      * @return The response from the task app.
      * @throws ResponseStatusException If the request failed.
      */
-    public ResponseEntity<?> forwardRequest(String taskType, String requestPath, HttpServletRequest request) {
+    public ResponseEntity<?> forwardRequest(String taskType, String requestPath, HttpServletRequest request, boolean secured) {
         try {
-            HttpRequest.Builder requestBuilder = createRequestBuilder(taskType, requestPath, request);
+            HttpRequest.Builder requestBuilder = createRequestBuilder(taskType, requestPath, request, secured);
             if (requestBuilder == null)
                 return ResponseEntity.notFound().build();
 
@@ -390,7 +392,7 @@ public class TaskAppCommunicationService {
         }
     }
 
-    private HttpRequest.Builder createRequestBuilder(String taskType, String requestPath, HttpServletRequest request) throws URISyntaxException {
+    private HttpRequest.Builder createRequestBuilder(String taskType, String requestPath, HttpServletRequest request, boolean secured) throws URISyntaxException {
         // build query string
         var query = request.getQueryString();
 
@@ -405,7 +407,7 @@ public class TaskAppCommunicationService {
             Pattern.matches("^api/(task|taskgroup)/[0-9]+(\\?.*)?", path.toLowerCase()))
             return null;
 
-        return this.prepareHttpRequest(taskType, path);
+        return this.prepareHttpRequest(taskType, path, secured);
     }
 
     private static void prepareRequest(HttpServletRequest request, HttpRequest.Builder requestBuilder) throws IOException {
@@ -499,6 +501,19 @@ public class TaskAppCommunicationService {
      * @throws URISyntaxException If the URL is invalid.
      */
     private HttpRequest.Builder prepareHttpRequest(String taskGroupType, String path) throws URISyntaxException {
+        return this.prepareHttpRequest(taskGroupType, path, true);
+    }
+
+    /**
+     * Prepares an HTTP request for the specified task group type.
+     *
+     * @param taskGroupType   The task group type.
+     * @param path            The path to append to the URL.
+     * @param addApiKeyHeader Whether to add the API key header.
+     * @return The HTTP request builder or {@code null} if no task app was found.
+     * @throws URISyntaxException If the URL is invalid.
+     */
+    private HttpRequest.Builder prepareHttpRequest(String taskGroupType, String path, boolean addApiKeyHeader) throws URISyntaxException {
         var app = this.getTaskApp(taskGroupType);
         if (app == null)
             return null;
@@ -511,7 +526,7 @@ public class TaskAppCommunicationService {
         }
 
         var builder = HttpRequest.newBuilder();
-        if (app.getApiKey() != null)
+        if (app.getApiKey() != null && addApiKeyHeader)
             builder = builder.header("X-API-KEY", app.getApiKey());
 
         return builder
@@ -530,6 +545,13 @@ public class TaskAppCommunicationService {
         return this.taskAppRepository.findByTaskType(taskGroupType).orElse(null);
     }
 
+    /**
+     * Throws an exception if the response body contains a message.
+     *
+     * @param response      The response.
+     * @param messagePrefix The message prefix.
+     * @throws ResponseStatusException If the response body contains a message.
+     */
     private void throwExceptionIfBodyContainsMessage(HttpResponse<String> response, String messagePrefix) throws ResponseStatusException {
         try {
             Map<String, Object> body = this.objectMapper.readValue(response.body(), new TypeReference<>() {

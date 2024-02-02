@@ -89,6 +89,7 @@ public class SecurityConfig {
             reg.requestMatchers("/auth/refresh").authenticated();
 
             // API
+            reg.requestMatchers("/api/forwardPublic/**").permitAll();
             reg.requestMatchers("/api/**").authenticated();
 
             // Other

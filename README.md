@@ -6,7 +6,7 @@ This application provides a REST-interface for the eTutor task administration.
 
 In development environment, the API documentation is available at http://localhost:8080/docs.
 
-See [CONTRIBUTING.md](https://github.com/eTutor-plus-plus/task-administration/blob/main/CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## Docker
 

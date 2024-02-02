@@ -4,16 +4,13 @@ import at.jku.dke.etutor.task_administration.services.TaskAppCommunicationServic
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * Controller that forwards requests to the corresponding task app.
  */
 @RestController
-@RequestMapping("/api/forward/{taskType}")
 @Tag(name = "Forward", description = "Forwards requests to the task app")
 public class ForwardController {
 
@@ -36,9 +33,23 @@ public class ForwardController {
      * @param request  The request.
      * @return The received response from the task app.
      */
-    @RequestMapping(value = "{*path}", method = {RequestMethod.GET, RequestMethod.DELETE, RequestMethod.POST, RequestMethod.PUT})
-    public ResponseEntity<?> forwardGet(@PathVariable String taskType, @PathVariable String path, HttpServletRequest request) {
-        return this.service.forwardRequest(taskType, path, request);
+    @PreAuthorize("isAuthenticated()")
+    @RequestMapping(value = "/api/forward/{taskType}/{*path}", method = {RequestMethod.GET, RequestMethod.DELETE, RequestMethod.POST, RequestMethod.PUT})
+    public ResponseEntity<?> forward(@PathVariable String taskType, @PathVariable String path, HttpServletRequest request) {
+        return this.service.forwardRequest(taskType, path, request, true);
+    }
+
+    /**
+     * Forwards the request to the task app. The forwarded request will not be authenticated.
+     *
+     * @param taskType The task type.
+     * @param path     The path at the task app.
+     * @param request  The request.
+     * @return The received response from the task app.
+     */
+    @GetMapping(value = "/api/forwardPublic/{taskType}/{*path}")
+    public ResponseEntity<?> forwardPublic(@PathVariable String taskType, @PathVariable String path, HttpServletRequest request) {
+        return this.service.forwardRequest(taskType, path, request, false);
     }
 
 }
