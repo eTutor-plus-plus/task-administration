@@ -52,6 +52,7 @@ jobs:
 
       - name: Install UI dependencies
         run: npm ci
+        working-directory: ui
 
       - name: Clean and Compile with maven
         run: mvn -B clean git-commit-id:revision spring-boot:build-info compile --file pom.xml
