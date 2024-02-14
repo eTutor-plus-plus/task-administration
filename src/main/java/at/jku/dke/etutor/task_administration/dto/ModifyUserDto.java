@@ -30,5 +30,5 @@ public record ModifyUserDto(@NotEmpty @Size(max = 50) String username,
                             OffsetDateTime activated,
                             @NotNull boolean fullAdmin,
                             OffsetDateTime lockoutEnd,
-                            @NotNull Set<OrganizationalUnitRoleAssignmentDto> organizationalUnits) implements Serializable {
+                            @NotNull Set<@NotNull OrganizationalUnitRoleAssignmentDto> organizationalUnits) implements Serializable {
 }

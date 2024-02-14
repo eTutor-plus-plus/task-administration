@@ -26,7 +26,7 @@ public class LoginAttemptService {
      */
     public static final int USER_MAX_ATTEMPTS = 5;
 
-    private static final LoadingCache<String, Integer> attemptsCache = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.DAYS).build(new CacheLoader<>() {
+    private static final LoadingCache<String, Integer> attemptsCache = CacheBuilder.newBuilder().expireAfterWrite(4, TimeUnit.HOURS).build(new CacheLoader<>() {
         @Override
         public Integer load(String key) {
             return 0;
@@ -113,7 +113,7 @@ public class LoginAttemptService {
     public boolean isBlocked() {
         try {
             synchronized (attemptsCache) {
-                return attemptsCache.get(this.getClientIP()) >= IP_MAX_ATTEMPTS;
+                return attemptsCache.get(this.getClientIP()) > IP_MAX_ATTEMPTS;
             }
         } catch (ExecutionException e) {
             return false;

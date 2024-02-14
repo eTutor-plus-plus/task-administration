@@ -13,10 +13,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LoginAttemptServiceTest {
 
+    //#region --- loginFailed ---
     @Test
-    void testLoginFailedWithoutExistingUser() {
+    void loginFailed_notExistingUser_increaseOnlyIpAttempt() {
         // Arrange
-        final String username = "testLoginFailedWithoutExistingUser";
+        final String username = "loginFailed_notExistingUser_increaseOnlyIpAttempt";
         var userRepository = Mockito.mock(UserRepository.class);
         Mockito.when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.empty());
 
@@ -33,9 +34,9 @@ class LoginAttemptServiceTest {
     }
 
     @Test
-    void testLoginFailedWithExistingUser() {
+    void loginFailed_existingUser_increaseUserAndIpAttempt() {
         // Arrange
-        final String username = "testLoginFailedWithExistingUser";
+        final String username = "loginFailed_existingUser_increaseUserAndIpAttempt";
         var user = new User();
         user.setUsername(username);
 
@@ -56,7 +57,7 @@ class LoginAttemptServiceTest {
     }
 
     @Test
-    void testLoginFailedBlockUser() {
+    void loginFailed_tooManyAttempts_blockUser() {
         // Arrange
         final String username = "testLoginFailedBlockUser";
         var user = new User();
@@ -81,9 +82,38 @@ class LoginAttemptServiceTest {
     }
 
     @Test
-    void testLoginSucceededWithoutExistingUser() {
+    void loginFailed_tooManyAttempts_blockIp() {
         // Arrange
-        final String username = "testLoginSucceededWithoutExistingUser";
+        final String username = "loginFailed_notExistingUser_increaseOnlyIpAttempt";
+        var userRepository = Mockito.mock(UserRepository.class);
+        Mockito.when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.empty());
+
+        var request = new MockHttpServletRequest();
+        request.setRemoteAddr("10.10.0.11");
+
+        var service = new LoginAttemptService(userRepository, request);
+        for (int i = 0; i < LoginAttemptService.IP_MAX_ATTEMPTS; i++) {
+            service.loginFailed(username);
+        }
+
+        // Assert
+        assertEquals(LoginAttemptService.IP_MAX_ATTEMPTS, service.getFailedLoginCount());
+        assertFalse(service.isBlocked());
+
+        // Act
+        service.loginFailed(username);
+
+        // Assert
+        assertEquals(LoginAttemptService.IP_MAX_ATTEMPTS + 1, service.getFailedLoginCount());
+        assertTrue(service.isBlocked());
+    }
+    //#endregion
+
+    //#region --- loginSucceeded ---
+    @Test
+    void loginSucceeded_notExistingUser_resetOnlyIpAttempts() {
+        // Arrange
+        final String username = "loginSucceeded_notExistingUser_resetOnlyIpAttempts";
         var userRepository = Mockito.mock(UserRepository.class);
         Mockito.when(userRepository.findByUsernameIgnoreCase(username)).thenReturn(Optional.empty());
 
@@ -93,6 +123,7 @@ class LoginAttemptServiceTest {
         var service = new LoginAttemptService(userRepository, request);
         service.loginFailed(username);
         service.loginFailed(username);
+        assertEquals(2, service.getFailedLoginCount());
 
         // Act
         service.loginSucceeded(username);
@@ -102,9 +133,9 @@ class LoginAttemptServiceTest {
     }
 
     @Test
-    void testLoginSucceededWithExistingUser() {
+    void loginSucceeded_existingUser_resetUserAndIpAttempts() {
         // Arrange
-        final String username = "testLoginSucceededWithExistingUser";
+        final String username = "loginSucceeded_existingUser_resetUserAndIpAttempts";
         var user = new User();
         user.setUsername(username);
         user.setLockoutEnd(OffsetDateTime.now());
@@ -118,6 +149,7 @@ class LoginAttemptServiceTest {
 
         var service = new LoginAttemptService(userRepository, request);
         service.loginFailed(username);
+        assertEquals(1, service.getFailedLoginCount());
 
         // Act
         service.loginSucceeded(username);
@@ -127,9 +159,11 @@ class LoginAttemptServiceTest {
         assertEquals(0, user.getFailedLoginCount());
         assertNull(user.getLockoutEnd());
     }
+    //#endregion
 
+    //#region --- isBlocked ---
     @Test
-    void testIsBlocked() {
+    void isBlocked_maxAttemptsReached_true() {
         // Arrange
         final String username = "testIsBlocked";
         var userRepository = Mockito.mock(UserRepository.class);
@@ -141,7 +175,7 @@ class LoginAttemptServiceTest {
         var service = new LoginAttemptService(userRepository, request);
 
         // Act & Assert
-        for (int i = 0; i < LoginAttemptService.IP_MAX_ATTEMPTS; i++) {
+        for (int i = 0; i <= LoginAttemptService.IP_MAX_ATTEMPTS; i++) {
             assertFalse(service.isBlocked());
 
             service.loginFailed(username);
@@ -151,11 +185,14 @@ class LoginAttemptServiceTest {
 
         assertTrue(service.isBlocked());
     }
+    //#endregion
 
+    //#region --- getClientIP ---
     @Test
-    void testGetClientIPFromHeader() {
+    void getClientIp_fromHeader() {
         // Arrange
         var request = new MockHttpServletRequest();
+        request.setRemoteAddr("10.10.0.1");
         request.addHeader("X-Forwarded-For", "192.168.0.1,10.10.0.1");
         var service = new LoginAttemptService(Mockito.mock(UserRepository.class), request);
 
@@ -167,7 +204,7 @@ class LoginAttemptServiceTest {
     }
 
     @Test
-    void testGetClientIPFromRemoteAddr() {
+    void getClientIp_fromRemoteAddr() {
         // Arrange
         var request = new MockHttpServletRequest();
         request.setRemoteAddr("10.10.0.1");
@@ -179,4 +216,5 @@ class LoginAttemptServiceTest {
         // Assert
         assertEquals("10.10.0.1", result);
     }
+    //#endregion
 }

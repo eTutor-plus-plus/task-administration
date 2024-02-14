@@ -17,7 +17,6 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -35,7 +34,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     /**
      * The base URL for problem details types.
      */
-    protected static final String BASE_URL = "http://etutor.dke.uni-linz.ac.at/errors/";
+    protected static final String BASE_URL = "https://etutor.dke.uni-linz.ac.at/errors/";
 
     /**
      * Creates a new instance of class {@link CustomExceptionHandler}.
@@ -155,6 +154,21 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * Handle exceptions of type {@link ValidationException}.
+     *
+     * @param ex      The exception to handle.
+     * @param request The current request.
+     * @return The response entity.
+     */
+    @ExceptionHandler({ValidationException.class})
+    public ResponseEntity<Object> handleValidationException(ValidationException ex, WebRequest request) {
+        String detail = ex.getLocalizedMessage();
+        var body = this.createProblemDetail(ex, HttpStatus.BAD_REQUEST, detail, null, null, request);
+        body.setType(URI.create(BASE_URL + "validation-error"));
+        return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    /**
      * Handle exceptions of type {@link DataIntegrityViolationException}.
      *
      * @param ex      The exception to handle.
@@ -164,9 +178,9 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({DataIntegrityViolationException.class})
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex, WebRequest request) {
         String detail = ex.getLocalizedMessage();
-        if (ex.getRootCause() instanceof SQLException sqex) {
+        if (ex.getRootCause() instanceof SQLException sqlEx) {
             SQLExceptionTranslator t = new SQLErrorCodeSQLExceptionTranslator();
-            var tmp = t.translate("Executing SQL Statement", null, sqex);
+            var tmp = t.translate("Executing SQL Statement", null, sqlEx);
             if (tmp != null)
                 detail = tmp.getLocalizedMessage();
         }

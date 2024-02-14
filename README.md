@@ -4,7 +4,9 @@ This application provides a REST-interface for the eTutor task administration.
 
 ## Development
 
-See [CONTRIBUTING.md](https://github.com/eTutor-plus-plus/task-administration/blob/main/CONTRIBUTING.md) for details.
+In development environment, the API documentation is available at http://localhost:8080/docs.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## Docker
 
@@ -22,6 +24,9 @@ docker run -p 8080:8080 \
   -e SPRING_MAIL_PORT=587 \
   -e SPRING_MAIL_USERNAME=etutor \
   -e SPRING_MAIL_PASSWORD=myPwd \
+  -e MOODLE_TOKEN=tbd \
+  -e MOODLE_URL=https://moodle.etutor.dke.uni-linz.ac.at/ \
+  -e MOODLE_ENABLED=true \
   etutorplusplus/task-administration
 ```
 
@@ -48,6 +53,9 @@ services:
             SPRING_MAIL_PORT: 587
             SPRING_MAIL_USERNAME: etutor
             SPRING_MAIL_PASSWORD: myPwd
+            MOODLE_TOKEN: tbd
+            MOODLE_URL: https://moodle.etutor.dke.uni-linz.ac.at/
+            MOODLE_ENABLED: true
 ```
 
 ### Environment Variables
@@ -74,3 +82,6 @@ The users must be configured via environment variables. The clients have to be c
 | `SPRING_MAIL_PORT`           | The port of the SMTP server.                       |
 | `SPRING_MAIL_USERNAME`       | The username of the SMTP server.                   |
 | `SPRING_MAIL_PASSWORD`       | The password of the SMTP server.                   |
+| `MOODLE_TOKEN`               | The token for the moodle webservice.               |
+| `MOODLE_URL`                 | The URL to the moodle.                             |
+| `MOODLE_ENABLED`             | Whether the moodle synchronization is enabled.     |

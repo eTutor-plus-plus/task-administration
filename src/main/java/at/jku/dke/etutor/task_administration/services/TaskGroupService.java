@@ -29,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * This class provides methods for managing {@link TaskGroup}s.
@@ -138,7 +139,20 @@ public class TaskGroupService {
         }
 
         taskGroup = this.repository.save(taskGroup);
-        this.taskAppCommunicationService.createTaskGroup(taskGroup.getId(), dto);
+        var result = this.taskAppCommunicationService.createTaskGroup(taskGroup.getId(), dto);
+        if (result != null) {
+            boolean modified = false;
+            if (result.descriptionDe() != null && (taskGroup.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionDe()))) {
+                taskGroup.setDescriptionDe(result.descriptionDe());
+                modified = true;
+            }
+            if (result.descriptionEn() != null && (taskGroup.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionEn()))) {
+                taskGroup.setDescriptionEn(result.descriptionEn());
+                modified = true;
+            }
+            if (modified)
+                this.repository.save(taskGroup);
+        }
 
         return taskGroup;
     }
@@ -187,7 +201,13 @@ public class TaskGroupService {
             }
         }
 
-        this.taskAppCommunicationService.updateTaskGroup(taskGroup.getId(), dto);
+        var result = this.taskAppCommunicationService.updateTaskGroup(taskGroup.getId(), dto);
+        if (result != null) {
+            if (result.descriptionDe() != null && (taskGroup.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionDe())))
+                taskGroup.setDescriptionDe(result.descriptionDe());
+            if (result.descriptionEn() != null && (taskGroup.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionEn())))
+                taskGroup.setDescriptionEn(result.descriptionEn());
+        }
         this.repository.save(taskGroup);
     }
 
@@ -198,12 +218,12 @@ public class TaskGroupService {
      */
     @Transactional
     public void delete(long id) {
-        var orgs = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
+        var orgUnits = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
         var taskGroup = this.repository.findById(id).orElse(null);
         if (taskGroup == null)
             return;
 
-        if (SecurityHelpers.isFullAdmin() || orgs.contains(taskGroup.getOrganizationalUnit().getId())) {
+        if (SecurityHelpers.isFullAdmin() || orgUnits.contains(taskGroup.getOrganizationalUnit().getId())) {
             if (taskGroup.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(taskGroup.getOrganizationalUnit().getId()))
                 throw new InsufficientAuthenticationException("User is not allowed to delete the task group");
 
@@ -234,8 +254,8 @@ public class TaskGroupService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnits(); // TODO: prevent access also with ACLs
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnits();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -254,8 +274,8 @@ public class TaskGroupService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnits();
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnits();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

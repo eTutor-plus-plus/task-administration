@@ -64,7 +64,8 @@ public final class SecurityHelpers {
         if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
             //noinspection unchecked
             var roles = (List<Map<String, Object>>) jwt.getClaim(AuthConstants.CLAIM_ROLES);
-            return roles.stream().anyMatch(x -> x.get("organizationalUnit").equals(orgId) && x.get("role").equals(AuthConstants.ROLE_TUTOR));
+            if (roles != null)
+                return roles.stream().anyMatch(x -> x.get("organizationalUnit").equals(orgId) && x.get("role").equals(AuthConstants.ROLE_TUTOR));
         }
         return false;
     }
@@ -80,7 +81,8 @@ public final class SecurityHelpers {
         if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
             //noinspection unchecked
             var roles = (List<Map<String, Object>>) jwt.getClaim(AuthConstants.CLAIM_ROLES);
-            return roles.stream().anyMatch(x -> x.get("organizationalUnit").equals(orgId) && x.get("role").equals(AuthConstants.ROLE_INSTRUCTOR));
+            if (roles != null)
+                return roles.stream().anyMatch(x -> x.get("organizationalUnit").equals(orgId) && x.get("role").equals(AuthConstants.ROLE_INSTRUCTOR));
         }
         return false;
     }
@@ -96,7 +98,8 @@ public final class SecurityHelpers {
         if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
             //noinspection unchecked
             var roles = (List<Map<String, Object>>) jwt.getClaim(AuthConstants.CLAIM_ROLES);
-            return roles.stream().anyMatch(x -> x.get("organizationalUnit").equals(orgId) && x.get("role").equals(AuthConstants.ROLE_ADMIN));
+            if (roles != null)
+                return roles.stream().anyMatch(x -> x.get("organizationalUnit").equals(orgId) && x.get("role").equals(AuthConstants.ROLE_ADMIN));
         }
         return false;
     }
@@ -111,7 +114,8 @@ public final class SecurityHelpers {
         if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
             //noinspection unchecked
             var roles = (List<Map<String, Object>>) jwt.getClaim(AuthConstants.CLAIM_ROLES);
-            return roles.stream().anyMatch(x -> x.get("organizationalUnit").equals(orgId));
+            if (roles != null)
+                return roles.stream().anyMatch(x -> x.get("organizationalUnit").equals(orgId));
         }
         return false;
     }
@@ -125,11 +129,12 @@ public final class SecurityHelpers {
         if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
             //noinspection unchecked
             var roles = (List<Map<String, Object>>) jwt.getClaim(AuthConstants.CLAIM_ROLES);
-            return roles.stream()
-                .filter(x -> x.get("role").equals(AuthConstants.ROLE_ADMIN))
-                .map(x -> x.get("organizationalUnit"))
-                .map(x -> (Long) x)
-                .collect(Collectors.toSet());
+            if (roles != null)
+                return roles.stream()
+                    .filter(x -> x.get("role").equals(AuthConstants.ROLE_ADMIN))
+                    .map(x -> x.get("organizationalUnit"))
+                    .map(x -> (Long) x)
+                    .collect(Collectors.toSet());
         }
         return Collections.emptySet();
     }
@@ -143,11 +148,12 @@ public final class SecurityHelpers {
         if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
             //noinspection unchecked
             var roles = (List<Map<String, Object>>) jwt.getClaim(AuthConstants.CLAIM_ROLES);
-            return roles.stream()
-                .filter(x -> x.get("role").equals(AuthConstants.ROLE_ADMIN) || x.get("role").equals(AuthConstants.ROLE_INSTRUCTOR))
-                .map(x -> x.get("organizationalUnit"))
-                .map(x -> (Long) x)
-                .collect(Collectors.toSet());
+            if (roles != null)
+                return roles.stream()
+                    .filter(x -> x.get("role").equals(AuthConstants.ROLE_ADMIN) || x.get("role").equals(AuthConstants.ROLE_INSTRUCTOR))
+                    .map(x -> x.get("organizationalUnit"))
+                    .map(x -> (Long) x)
+                    .collect(Collectors.toSet());
         }
         return Collections.emptySet();
     }
@@ -161,10 +167,11 @@ public final class SecurityHelpers {
         if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
             //noinspection unchecked
             var roles = (List<Map<String, Object>>) jwt.getClaim(AuthConstants.CLAIM_ROLES);
-            return roles.stream()
-                .map(x -> x.get("organizationalUnit"))
-                .map(x -> (Long) x)
-                .collect(Collectors.toSet());
+            if (roles != null)
+                return roles.stream()
+                    .map(x -> x.get("organizationalUnit"))
+                    .map(x -> (Long) x)
+                    .collect(Collectors.toSet());
         }
         return Collections.emptySet();
     }

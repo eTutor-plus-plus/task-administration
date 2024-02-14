@@ -128,7 +128,7 @@ public class AuthJWKSource {
         }
 
         // if keys are too old, generate new ones
-        if (Files.readAttributes(this.privateKeyPath, BasicFileAttributes.class).lastModifiedTime().toInstant().isBefore(Instant.now().minus(30, ChronoUnit.DAYS))) {
+        if (Files.getLastModifiedTime(this.privateKeyPath).toInstant().isBefore(Instant.now().minus(30, ChronoUnit.DAYS))) {
             this.generateKeys();
             return;
         }
@@ -144,8 +144,8 @@ public class AuthJWKSource {
 
         // private
         var privateKeyString = Files.readString(this.privateKeyPath);
-        var prkb = Base64.getDecoder().decode(privateKeyString);
-        EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(prkb);
+        var decodedKey = Base64.getDecoder().decode(privateKeyString);
+        EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(decodedKey);
         this.privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
     }
 }

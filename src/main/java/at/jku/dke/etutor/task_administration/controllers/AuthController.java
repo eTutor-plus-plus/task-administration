@@ -24,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.*;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Locale;
@@ -35,6 +36,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 @Tag(name = "Authentication", description = "User authentication")
+@Validated
 public class AuthController {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthController.class);

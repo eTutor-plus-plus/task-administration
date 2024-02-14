@@ -1,6 +1,7 @@
 package at.jku.dke.etutor.task_administration.controllers;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
@@ -50,7 +51,7 @@ public class SpaController {
      * @return Forward
      */
     @RequestMapping({"/app/{path:[^\\.]*}"})
-    public String redirectSpaSubPath() {
+    public String redirectSpaSubPath(@SuppressWarnings("unused") @PathVariable String path) {
         return "forward:/app/index.html";
     }
 
@@ -60,7 +61,7 @@ public class SpaController {
      * @return Forward
      */
     @RequestMapping({"/app/{path:[^\\.]*}/**"})
-    public String redirectSpaSubPath2() {
+    public String redirectSpaSubPath2(@SuppressWarnings("unused") @PathVariable String path) {
         return "forward:/app/index.html";
     }
 }

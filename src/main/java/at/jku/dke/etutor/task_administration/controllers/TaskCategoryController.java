@@ -8,16 +8,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.time.Instant;
@@ -28,6 +28,7 @@ import java.time.Instant;
 @RestController
 @RequestMapping("/api/taskCategory")
 @Tag(name = "Task Category", description = "Manage task categories")
+@Validated
 public class TaskCategoryController {
 
     private final TaskCategoryService taskCategoryService;
@@ -82,7 +83,7 @@ public class TaskCategoryController {
         var dto = this.taskCategoryService.getTaskCategory(id);
         return dto
             .map(ResponseEntity::ok)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new EntityNotFoundException("Task category with id " + id + " does not exist."));
     }
 
     /**
@@ -144,5 +145,23 @@ public class TaskCategoryController {
     public ResponseEntity<Void> deleteTaskCategory(@PathVariable long id) {
         this.taskCategoryService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Forces moodle synchronization for the task category.
+     *
+     * @param id The identifier of the task category to update.
+     * @return Accepted
+     */
+    @PostMapping(value = "/{id}")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "202", description = "Task category synchronization initiated"),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "403", description = "Operation not allowed", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "404", description = "Task category not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+    })
+    public ResponseEntity<Void> syncMoodle(@PathVariable long id) {
+        this.taskCategoryService.createMoodleObjectsForTaskCategory(id);
+        return ResponseEntity.accepted().build();
     }
 }

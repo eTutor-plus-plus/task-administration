@@ -79,13 +79,17 @@ public class SecurityConfig {
             reg.requestMatchers(HttpMethod.OPTIONS).permitAll();
 
             // Actuator
-            reg.requestMatchers("/actuator/**").hasAuthority(AuthConstants.ROLE_FULL_ADMIN);
             reg.requestMatchers("/actuator/health").permitAll();
+            reg.requestMatchers("/actuator/health/liveness").permitAll();
+            reg.requestMatchers("/actuator/health/readiness").permitAll();
+            reg.requestMatchers("/actuator/info").authenticated();
+            reg.requestMatchers("/actuator/**").hasAuthority(AuthConstants.ROLE_FULL_ADMIN);
 
             // AUTH
             reg.requestMatchers("/auth/refresh").authenticated();
 
             // API
+            reg.requestMatchers("/api/forwardPublic/**").permitAll();
             reg.requestMatchers("/api/**").authenticated();
 
             // Other
@@ -94,13 +98,11 @@ public class SecurityConfig {
 
         http.sessionManagement(conf -> conf.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        http.oauth2ResourceServer(conf -> {
-            conf.jwt(jwtConf -> {
-                jwtConf.decoder(jwtDecoder);
-                jwtConf.jwkSetUri(TaskAdministrationApplication.determineLocalAddress(env) + "auth/jwk");
-                jwtConf.jwtAuthenticationConverter(customJwtAuthenticationConverter());
-            });
-        });
+        http.oauth2ResourceServer(conf -> conf.jwt(jwtConf -> {
+            jwtConf.decoder(jwtDecoder);
+            jwtConf.jwkSetUri(TaskAdministrationApplication.determineLocalAddress(env) + "auth/jwk");
+            jwtConf.jwtAuthenticationConverter(customJwtAuthenticationConverter());
+        }));
 
         return http.build();
     }

@@ -9,6 +9,7 @@ import at.jku.dke.etutor.task_administration.data.repositories.TaskGroupReposito
 import at.jku.dke.etutor.task_administration.data.repositories.TaskRepository;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
+import at.jku.dke.etutor.task_administration.dto.SubmitSubmissionDto;
 import at.jku.dke.etutor.task_administration.dto.TaskDto;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -26,12 +27,14 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 /**
  * This class provides methods for managing {@link Task}s.
@@ -160,7 +163,28 @@ public class TaskService {
         }
 
         task = this.repository.save(task);
-        this.taskAppCommunicationService.createTask(task.getId(), dto);
+        var result = this.taskAppCommunicationService.createTask(task.getId(), dto);
+        if (result != null) {
+            boolean modified = false;
+            if (result.descriptionDe() != null && (task.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionDe()))) {
+                task.setDescriptionDe(result.descriptionDe());
+                modified = true;
+            }
+            if (result.descriptionEn() != null && (task.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionEn()))) {
+                task.setDescriptionEn(result.descriptionEn());
+                modified = true;
+            }
+            if (result.difficulty() != null && result.difficulty() >= 1 && result.difficulty() <= 4) {
+                task.setDifficulty(result.difficulty());
+                modified = true;
+            }
+            if (result.maxPoints() != null && result.maxPoints().compareTo(BigDecimal.ZERO) > 0) {
+                task.setMaxPoints(result.maxPoints());
+                modified = true;
+            }
+            if (modified)
+                this.repository.save(task);
+        }
 
         return task;
     }
@@ -224,7 +248,18 @@ public class TaskService {
             }
         }
 
-        this.taskAppCommunicationService.updateTask(task.getId(), dto);
+        var result = this.taskAppCommunicationService.updateTask(task.getId(), dto);
+        if (result != null) {
+            if (result.descriptionDe() != null && (task.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionDe())))
+                task.setDescriptionDe(result.descriptionDe());
+            if (result.descriptionEn() != null && (task.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionEn())))
+                task.setDescriptionEn(result.descriptionEn());
+            if (result.difficulty() != null && result.difficulty() >= 1 && result.difficulty() <= 4)
+                task.setDifficulty(result.difficulty());
+            if (result.maxPoints() != null && result.maxPoints().compareTo(BigDecimal.ZERO) > 0)
+                task.setMaxPoints(result.maxPoints());
+        }
+
         this.repository.save(task);
     }
 
@@ -235,12 +270,12 @@ public class TaskService {
      */
     @Transactional
     public void delete(long id) {
-        var orgs = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
+        var orgUnit = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
         var task = this.repository.findById(id).orElse(null);
         if (task == null)
             return;
 
-        if (SecurityHelpers.isFullAdmin() || orgs.contains(task.getOrganizationalUnit().getId())) {
+        if (SecurityHelpers.isFullAdmin() || orgUnit.contains(task.getOrganizationalUnit().getId())) {
             if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
                 throw new InsufficientAuthenticationException("User is not allowed to delete the task");
 
@@ -248,6 +283,21 @@ public class TaskService {
             this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());
             this.repository.deleteById(id);
         }
+    }
+
+    /**
+     * Submits the specified submission.
+     *
+     * @param submission The submission.
+     * @return The submission response.
+     */
+    public Serializable submit(SubmitSubmissionDto submission) {
+        var task = this.repository.findById(submission.taskId()).orElseThrow(() -> new EntityNotFoundException("Task with id " + submission.taskId() + " does not exist"));
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(task.getOrganizationalUnit().getId()))
+            throw new EntityNotFoundException("Task with id " + submission.taskId() + " does not exist");
+
+        LOG.info("Submitting task {}", submission.taskId());
+        return this.taskAppCommunicationService.submit(task.getTaskType(), submission);
     }
 
     //#endregion
@@ -273,8 +323,8 @@ public class TaskService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnits(); // TODO: prevent access also with ACLs
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnits();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -293,8 +343,8 @@ public class TaskService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgs = SecurityHelpers.getOrganizationalUnits();
-                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgs));
+                var orgUnits = SecurityHelpers.getOrganizationalUnits();
+                predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

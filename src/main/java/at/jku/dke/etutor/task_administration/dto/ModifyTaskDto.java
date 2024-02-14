@@ -1,6 +1,7 @@
 package at.jku.dke.etutor.task_administration.dto;
 
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
 import java.io.Serializable;
@@ -32,6 +33,6 @@ public record ModifyTaskDto(@NotNull Long organizationalUnitId,
                             @NotEmpty @Size(max = 100) String taskType,
                             @NotNull TaskStatus status,
                             Long taskGroupId,
-                            Set<Long> taskCategoryIds,
-                            Map<String, Object> additionalData) implements Serializable {
+                            Set<@NotNull Long> taskCategoryIds,
+                            @Valid Map<String, Object> additionalData) implements Serializable {
 }

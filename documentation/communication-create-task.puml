@@ -1,0 +1,39 @@
+@startuml
+!theme plain
+
+actor "Instructor (Browser)" as client
+
+participant "TaskController" as taskAdminController #lightBlue
+participant "TaskService" as taskAdminService #lightBlue
+database "Task-Admin DB" as taskAdminDb #lightBlue
+participant "TaskAppCommunicationService" as taskCommService #lightBlue
+
+participant "TaskController" as taskAppController #lightGreen
+participant "TaskService" as taskAppService #lightGreen
+database "Task-App DB" as taskAppDb #lightGreen
+
+client -> taskAdminController ++ : **POST** /api/task (dto)
+taskAdminController -> taskAdminService ++ : **create**(dto)
+taskAdminService -> taskAdminDb ++ : **INSERT**
+taskAdminService <-- taskAdminDb : id
+taskAdminService -> taskCommService ++ : **createTask**(id, dto)
+taskCommService -> taskAdminDb ++ : **SELECT** task_app
+return connection details
+taskCommService -> taskAppController ++ : **POST** /api/task/id (dto)
+taskAppController -> taskAppService ++ : **create**(id, dto)
+taskAppService -> taskAppDb ++ : **INSERT**
+taskAppService <-- taskAppDb
+taskAppService -> taskAppDb: **COMMIT**
+return
+return Override task data
+return 201 CREATED (override task data)
+return override task data
+taskAdminService -> taskAdminDb : **UPDATE** override data
+taskAdminService <-- taskAdminDb
+
+taskAdminService -> taskAdminDb: **COMMIT**
+return
+return Task data
+return 201 CREATED (dto)
+
+@enduml

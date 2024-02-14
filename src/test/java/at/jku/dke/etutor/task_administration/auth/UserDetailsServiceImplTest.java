@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 class UserDetailsServiceImplTest {
 
     @Test
-    void testLoadUserByUsernameNotFoundThrowsException() {
+    void loadUserByUsername_notExistingUser_throwsException() {
         // Arrange
         final String username = "username";
         var repository = mock(UserRepository.class);
@@ -32,7 +32,7 @@ class UserDetailsServiceImplTest {
     }
 
     @Test
-    void testLoadUserByUsernameNotFoundAndBlockedThrowsException() {
+    void loadUserByUsername_notExistingUserAndIpBlocked_throwsException() {
         // Arrange
         final String username = "username";
         var repository = mock(UserRepository.class);
@@ -48,7 +48,7 @@ class UserDetailsServiceImplTest {
     }
 
     @Test
-    void testLoadUserByUsernameFoundAndBlockedThrowsException() {
+    void loadUserByUsername_existingUserAndIpBlocked_throwsException() {
         // Arrange
         final String username = "username";
         var repository = mock(UserRepository.class);
@@ -64,7 +64,7 @@ class UserDetailsServiceImplTest {
     }
 
     @Test
-    void testLoadUserByUsernameFound() {
+    void loadUserByUsername_existing_returnUserDetails() {
         // Arrange
         final String username = "username";
         var user = new User();

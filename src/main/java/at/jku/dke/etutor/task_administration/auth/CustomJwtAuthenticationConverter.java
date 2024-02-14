@@ -46,7 +46,10 @@ public class CustomJwtAuthenticationConverter implements Converter<Jwt, Abstract
 
         // Roles
         Collection<Map<String, Object>> roles = source.getClaim(AuthConstants.CLAIM_ROLES);
-        roles.stream().map(x -> new SimpleGrantedAuthority(String.valueOf(x.get("role")))).forEach(authorities::add);
+        if (roles != null)
+            roles.stream()
+                .map(x -> new SimpleGrantedAuthority(String.valueOf(x.get("role"))))
+                .forEach(authorities::add);
 
         return new JwtAuthenticationToken(source, authorities, principalClaimValue);
     }

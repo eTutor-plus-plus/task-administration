@@ -28,7 +28,6 @@ import java.util.Optional;
  * This class provides methods for managing {@link TaskApp}s.
  */
 @Service
-@PreAuthorize(AuthConstants.AUTHORITY_FULL_ADMIN)
 public class TaskAppService {
     private static final Logger LOG = LoggerFactory.getLogger(TaskAppService.class);
 
@@ -82,6 +81,7 @@ public class TaskAppService {
      * @return The created task app.
      */
     @Transactional
+    @PreAuthorize(AuthConstants.AUTHORITY_FULL_ADMIN)
     public TaskApp create(ModifyTaskAppDto dto) {
         LOG.info("Creating task app {}", dto.url());
 
@@ -103,6 +103,7 @@ public class TaskAppService {
      * @throws ConcurrencyFailureException If the concurrency check failed.
      */
     @Transactional
+    @PreAuthorize(AuthConstants.AUTHORITY_FULL_ADMIN)
     public void update(long id, ModifyTaskAppDto dto, Instant concurrencyToken) {
         var taskApp = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Task app " + id + " does not exist."));
         if (concurrencyToken != null && taskApp.getLastModifiedDate() != null && taskApp.getLastModifiedDate().isAfter(concurrencyToken))
@@ -121,6 +122,7 @@ public class TaskAppService {
      * @param id The identifier of the task app to delete.
      */
     @Transactional
+    @PreAuthorize(AuthConstants.AUTHORITY_FULL_ADMIN)
     public void delete(long id) {
         LOG.info("Deleting task app {}", id);
         this.repository.deleteById(id);
