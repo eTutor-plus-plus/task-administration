@@ -16,7 +16,7 @@ COPY --from=builder /app/spring-boot-loader/ ./
 COPY --from=builder /app/snapshot-dependencies/ ./
 COPY --from=builder /app/application/ ./
 
-# TODO: Angular App
+# Angular App
 COPY target/classes/static/app/ /public/
 
 # Spring
