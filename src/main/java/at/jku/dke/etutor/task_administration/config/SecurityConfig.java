@@ -113,7 +113,7 @@ public class SecurityConfig {
      * @return The CORS configuration source.
      */
     @Bean
-    @Profile("dev")
+    @Profile({"dev", "cors"})
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
