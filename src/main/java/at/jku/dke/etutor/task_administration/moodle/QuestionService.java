@@ -41,41 +41,45 @@ public class QuestionService extends MoodleService {
 
     @Async
     public CompletableFuture<Optional<Integer>> createQuestionFromTask(Task task) {
-        if (this.config.isDisabled())
-            return CompletableFuture.completedFuture(Optional.empty());
-
-        LOG.info("Creating question from Task {}", task.getId());
-        int category_id;
-        Optional<TaskCategory> optTaskCat = task.getTaskCategories().stream().findFirst();
-        if (optTaskCat.isPresent()) {
-            TaskCategory taskCategory = optTaskCat.get();
-            category_id =  taskCategory.getMoodleId();
-        } else {
-            OrganizationalUnit ou = this.ouRepository.findById(task.getOrganizationalUnit().getId()).orElseThrow();
-            category_id = ou.getMoodleId();
-        }
-
-        //format questiontext
-        String qtext = "<span lang='de'>"+task.getDescriptionDe()+"</span> "
-            + "<span lang='en'>"+ task.getDescriptionEn()+"</span>";
-
-        Map<String, String> body_question = new HashMap<>();
-        body_question.put("data[id]", task.getId().toString());
-        body_question.put("data[parent]", "0");
-        body_question.put("data[name]", task.getTitle());
-        body_question.put("data[id]", task.getId().toString());
-        body_question.put("data[questiontext]", qtext);
-        body_question.put("data[questiontestformat", "1");
-        body_question.put("data[id]", task.getId().toString());
-
-        try {
-            String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_create_question_category"), body_question);
-            Question result = objectMapper.readValue(responseBody, Question.class);
-            return CompletableFuture.completedFuture(Optional.of(result.id()));
-        } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
-            LOG.error("Failed to create task {}.", task.getId(), ex);
+        LOG.info("starting moodle Task sync");
+        if (this.config.isDisabled()) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
+        //for(int i = 0;i<task.getTaskCategories().size();i++) {
+            LOG.info("Creating question from Task {} for categoriy {}", task.getId(), task.getTaskCategories().toArray()[0]);
+            int category_id;
+            Optional<TaskCategory> optTaskCat = task.getTaskCategories().stream().findFirst();
+            if (optTaskCat.isPresent()) {
+                TaskCategory taskCategory = optTaskCat.get();
+                category_id = taskCategory.getMoodleId();
+            } else {
+                return null;
+            }
+
+            //format questiontext
+            String qtext = "<span lang='de'>" + task.getDescriptionDe() + "</span> "
+                + "<span lang='en'>" + task.getDescriptionEn() + "</span>";
+
+            Map<String, String> body_question = new HashMap<>();
+            body_question.put("data[category_id]", String.valueOf(category_id));
+            body_question.put("data[id]", task.getId().toString());
+            body_question.put("data[name]", task.getTitle());
+            body_question.put("data[questiontext]", qtext);
+            body_question.put("data[points]", task.getMaxPoints().toString());
+            body_question.put("data[coderunnertype]", "etutor-" + task.getTaskType());
+            body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":3}");
+            LOG.info(body_question.toString());
+
+
+            try {
+                String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_create_question"), body_question);
+                Question result = objectMapper.readValue(responseBody, Question.class);
+                return CompletableFuture.completedFuture(Optional.of(result.id()));
+            } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
+                LOG.error("Failed to create Question {}.", task.getId(), ex);
+                return CompletableFuture.completedFuture(Optional.empty());
+            }
+
     }
 
     private record Question(int id, String name) {

@@ -2,6 +2,7 @@ package at.jku.dke.etutor.task_administration.services;
 
 import at.jku.dke.etutor.task_administration.auth.SecurityHelpers;
 import at.jku.dke.etutor.task_administration.data.entities.Task;
+import at.jku.dke.etutor.task_administration.data.entities.TaskCategory;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
 import at.jku.dke.etutor.task_administration.data.repositories.OrganizationalUnitRepository;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskCategoryRepository;
@@ -11,6 +12,8 @@ import at.jku.dke.etutor.task_administration.dto.CombinedDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
 import at.jku.dke.etutor.task_administration.dto.SubmitSubmissionDto;
 import at.jku.dke.etutor.task_administration.dto.TaskDto;
+import at.jku.dke.etutor.task_administration.moodle.QuestionCategoryService;
+import at.jku.dke.etutor.task_administration.moodle.QuestionService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -48,6 +51,7 @@ public class TaskService {
     private final OrganizationalUnitRepository organizationalUnitRepository;
     private final TaskAppCommunicationService taskAppCommunicationService;
 
+    private final QuestionService questionService;
     /**
      * Creates a new instance of class {@link TaskService}.
      *
@@ -58,12 +62,13 @@ public class TaskService {
      * @param taskAppCommunicationService  The task app communication service.
      */
     public TaskService(TaskRepository repository, TaskGroupRepository taskGroupRepository, TaskCategoryRepository taskCategoryRepository,
-                       OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService) {
+                       OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService, QuestionService questionService) {
         this.repository = repository;
         this.taskGroupRepository = taskGroupRepository;
         this.taskCategoryRepository = taskCategoryRepository;
         this.organizationalUnitRepository = organizationalUnitRepository;
         this.taskAppCommunicationService = taskAppCommunicationService;
+        this.questionService = questionService;
     }
 
     //#region --- View ---
@@ -184,8 +189,20 @@ public class TaskService {
             if (modified)
                 this.repository.save(task);
         }
-
+        this.createMoodleObjectsForTaskCategory(task);
         return task;
+    }
+
+    public void createMoodleObjectsForTaskCategory(Task task) {
+        if (task.getMoodleId() != null)
+            return;
+
+        this.questionService.createQuestionFromTask(task).thenAccept(moodleId -> {
+            if (moodleId.isPresent()) {
+                task.setMoodleId(moodleId.get());
+                this.repository.save(task);
+            }
+        });
     }
 
     /**
