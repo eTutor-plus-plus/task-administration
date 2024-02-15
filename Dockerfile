@@ -16,9 +16,6 @@ COPY --from=builder /app/spring-boot-loader/ ./
 COPY --from=builder /app/snapshot-dependencies/ ./
 COPY --from=builder /app/application/ ./
 
-# Angular App
-COPY target/classes/static/app/* /public/
-
 # Spring
 ENV SPRING_PROFILES_ACTIVE=prod
 
