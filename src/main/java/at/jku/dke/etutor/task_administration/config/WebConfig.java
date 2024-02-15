@@ -1,6 +1,7 @@
 package at.jku.dke.etutor.task_administration.config;
 
 import nz.net.ultraq.thymeleaf.layoutdialect.LayoutDialect;
+import org.springframework.boot.actuate.web.exchanges.HttpExchange;
 import org.springframework.boot.actuate.web.exchanges.HttpExchangeRepository;
 import org.springframework.boot.actuate.web.exchanges.InMemoryHttpExchangeRepository;
 import org.springframework.context.annotation.Bean;
@@ -38,9 +39,7 @@ public class WebConfig implements WebMvcConfigurer {
      */
     @Bean
     public HttpExchangeRepository httpTraceRepository() {
-        var repo = new InMemoryHttpExchangeRepository();
-        repo.setCapacity(500);
-        return repo;
+        return new CustomHttpExchangeRepository();
     }
 
     /**
@@ -86,4 +85,20 @@ public class WebConfig implements WebMvcConfigurer {
         return new RequestContextListener();
     }
 
+    private static class CustomHttpExchangeRepository extends InMemoryHttpExchangeRepository {
+        public CustomHttpExchangeRepository() {
+            super();
+            setCapacity(500);
+        }
+
+        @Override
+        public void add(HttpExchange exchange) {
+            if (exchange.getRequest().getUri().getPath().startsWith("/actuator") ||
+                exchange.getRequest().getUri().getPath().startsWith("/app") ||
+                exchange.getRequest().getUri().getPath().equals("/")) {
+                return;
+            }
+            super.add(exchange);
+        }
+    }
 }
