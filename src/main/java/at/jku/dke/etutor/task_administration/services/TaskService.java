@@ -34,9 +34,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * This class provides methods for managing {@link Task}s.
@@ -204,7 +202,7 @@ public class TaskService {
 
         this.questionService.createQuestionFromTask(task).thenAccept(moodleId -> {
             if (moodleId.isPresent()) {
-                task.setMoodleId(moodleId.get().length);
+                task.setMoodleId(Arrays.stream(moodleId.get()).toArray());
                 this.repository.save(task);
             }
         });

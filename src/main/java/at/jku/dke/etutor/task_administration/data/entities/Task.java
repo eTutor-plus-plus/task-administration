@@ -5,11 +5,14 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.annotations.Type;
+import org.hibernate.type.descriptor.java.IntegerPrimitiveArrayJavaType;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
 
@@ -50,8 +53,8 @@ public class Task extends AuditedEntity {
     @Column(name = "task_type", nullable = false, length = 100)
     private String taskType;
 
-    @Column(name = "moodle_id")
-    private Integer moodleId;
+    @Column(name = "moodle_id", columnDefinition = "int[]")
+    private int[] moodleId;
 
     @NotNull
     @Column(name = "status", columnDefinition = "task_status not null")
@@ -214,7 +217,7 @@ public class Task extends AuditedEntity {
      *
      * @return The moodle identifier (course category).
      */
-    public Integer getMoodleId() {
+    public int[] getMoodleId() {
         return moodleId;
     }
 
@@ -223,7 +226,7 @@ public class Task extends AuditedEntity {
      *
      * @param moodleId The moodle identifier (course category).
      */
-    public void setMoodleId(Integer moodleId) {
+    public void setMoodleId(int[] moodleId) {
         this.moodleId = moodleId;
     }
 
