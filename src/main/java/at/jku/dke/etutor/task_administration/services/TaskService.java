@@ -188,18 +188,23 @@ public class TaskService {
             }
             if (modified)
                 this.repository.save(task);
+
+            //only syncing to moodle if the task is approved
+            if(task.getStatus()==TaskStatus.APPROVED) {
+                this.createMoodleObjectsForTaskCategory(task);
+            }
         }
-        this.createMoodleObjectsForTaskCategory(task);
+
         return task;
     }
-
+    @Transactional
     public void createMoodleObjectsForTaskCategory(Task task) {
         if (task.getMoodleId() != null)
             return;
 
         this.questionService.createQuestionFromTask(task).thenAccept(moodleId -> {
             if (moodleId.isPresent()) {
-                task.setMoodleId(moodleId.get());
+                task.setMoodleId(moodleId.get().length);
                 this.repository.save(task);
             }
         });

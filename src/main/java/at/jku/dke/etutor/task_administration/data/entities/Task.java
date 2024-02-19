@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -67,6 +68,7 @@ public class Task extends AuditedEntity {
 
     @Column(name = "approved_date")
     private OffsetDateTime approvedDate;
+
 
     @ManyToMany
     @JoinTable(name = "tasks_task_categories",
