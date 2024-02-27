@@ -558,6 +558,8 @@ public class TaskAppCommunicationService {
             });
             if (body.containsKey("message"))
                 throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, messagePrefix + ": " + body.get("message"));
+            if (body.containsKey("detail"))
+                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, messagePrefix + ": " + body.get("detail"));
         } catch (JsonProcessingException ignored) {
         }
     }
