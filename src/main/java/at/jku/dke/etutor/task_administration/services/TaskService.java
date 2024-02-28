@@ -3,11 +3,9 @@ package at.jku.dke.etutor.task_administration.services;
 import at.jku.dke.etutor.task_administration.auth.SecurityHelpers;
 import at.jku.dke.etutor.task_administration.data.entities.Task;
 import at.jku.dke.etutor.task_administration.data.entities.TaskCategory;
+import at.jku.dke.etutor.task_administration.data.entities.TaskMoodleid;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
-import at.jku.dke.etutor.task_administration.data.repositories.OrganizationalUnitRepository;
-import at.jku.dke.etutor.task_administration.data.repositories.TaskCategoryRepository;
-import at.jku.dke.etutor.task_administration.data.repositories.TaskGroupRepository;
-import at.jku.dke.etutor.task_administration.data.repositories.TaskRepository;
+import at.jku.dke.etutor.task_administration.data.repositories.*;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
 import at.jku.dke.etutor.task_administration.dto.SubmitSubmissionDto;
@@ -49,6 +47,8 @@ public class TaskService {
     private final OrganizationalUnitRepository organizationalUnitRepository;
     private final TaskAppCommunicationService taskAppCommunicationService;
 
+    private final TaskMoodleidRepository taskMoodleidRepository;
+
     private final QuestionService questionService;
     /**
      * Creates a new instance of class {@link TaskService}.
@@ -60,12 +60,13 @@ public class TaskService {
      * @param taskAppCommunicationService  The task app communication service.
      */
     public TaskService(TaskRepository repository, TaskGroupRepository taskGroupRepository, TaskCategoryRepository taskCategoryRepository,
-                       OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService, QuestionService questionService) {
+                       OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService, TaskMoodleidRepository taskMoodleidRepository, QuestionService questionService) {
         this.repository = repository;
         this.taskGroupRepository = taskGroupRepository;
         this.taskCategoryRepository = taskCategoryRepository;
         this.organizationalUnitRepository = organizationalUnitRepository;
         this.taskAppCommunicationService = taskAppCommunicationService;
+        this.taskMoodleidRepository = taskMoodleidRepository;
         this.questionService = questionService;
     }
 
@@ -187,6 +188,7 @@ public class TaskService {
             if (modified)
                 this.repository.save(task);
 
+
             //only syncing to moodle if the task is approved
             if(task.getStatus()==TaskStatus.APPROVED) {
                 this.createMoodleObjectsForTaskCategory(task);
@@ -197,16 +199,27 @@ public class TaskService {
     }
     @Transactional
     public void createMoodleObjectsForTaskCategory(Task task) {
-        if (task.getMoodleId() != null)
+        if (!taskMoodleidRepository.findById_TaskId(task.getId()).isEmpty())
             return;
 
-        this.questionService.createQuestionFromTask(task).thenAccept(moodleId -> {
-            if (moodleId.isPresent()) {
-                task.setMoodleId(Arrays.stream(moodleId.get()).toArray());
-                this.repository.save(task);
+        this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
+            moodleIds.ifPresent(this.taskMoodleidRepository::saveAll);
+        });
+    }
+    @Transactional
+    public void updateMoodleObjectsForTaskCategory(Task task) {
+
+        this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
+            if (moodleIds.isPresent()) {
+                //this.taskMoodleidRepository.deleteByTaskId(task.getId());
+                LOG.info("All tasks got from Task {} got deleted", task.getId());
+                this.taskMoodleidRepository.saveAll(moodleIds.get());
+
             }
         });
     }
+
+
 
     /**
      * Updates an existing task.
@@ -239,6 +252,7 @@ public class TaskService {
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
         task.setTaskGroup(dto.taskGroupId() == null ? null : this.taskGroupRepository.getReferenceById(dto.taskGroupId()));
+
 
         if (dto.taskCategoryIds() != null) {
             var toRemove = task.getTaskCategories().stream().filter(x -> !dto.taskCategoryIds().contains(x.getId())).toList();
@@ -280,6 +294,11 @@ public class TaskService {
         }
 
         this.repository.save(task);
+
+
+        if(task.getStatus()==TaskStatus.APPROVED) {
+            this.updateMoodleObjectsForTaskCategory(task);
+        }
     }
 
     /**

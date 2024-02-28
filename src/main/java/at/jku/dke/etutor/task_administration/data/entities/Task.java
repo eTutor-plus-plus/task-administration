@@ -53,9 +53,6 @@ public class Task extends AuditedEntity {
     @Column(name = "task_type", nullable = false, length = 100)
     private String taskType;
 
-    @Column(name = "moodle_id", columnDefinition = "int[]")
-    private int[] moodleId;
-
     @NotNull
     @Column(name = "status", columnDefinition = "task_status not null")
     private TaskStatus status;
@@ -210,24 +207,6 @@ public class Task extends AuditedEntity {
      */
     public void setTaskType(String taskType) {
         this.taskType = taskType;
-    }
-
-    /**
-     * Gets the moodle identifier (course category).
-     *
-     * @return The moodle identifier (course category).
-     */
-    public int[] getMoodleId() {
-        return moodleId;
-    }
-
-    /**
-     * Sets the moodle identifier (course category).
-     *
-     * @param moodleId The moodle identifier (course category).
-     */
-    public void setMoodleId(int[] moodleId) {
-        this.moodleId = moodleId;
     }
 
     /**
