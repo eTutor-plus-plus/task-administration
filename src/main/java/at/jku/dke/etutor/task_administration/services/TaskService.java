@@ -2,15 +2,12 @@ package at.jku.dke.etutor.task_administration.services;
 
 import at.jku.dke.etutor.task_administration.auth.SecurityHelpers;
 import at.jku.dke.etutor.task_administration.data.entities.Task;
-import at.jku.dke.etutor.task_administration.data.entities.TaskCategory;
-import at.jku.dke.etutor.task_administration.data.entities.TaskMoodleid;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
 import at.jku.dke.etutor.task_administration.data.repositories.*;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
 import at.jku.dke.etutor.task_administration.dto.SubmitSubmissionDto;
 import at.jku.dke.etutor.task_administration.dto.TaskDto;
-import at.jku.dke.etutor.task_administration.moodle.QuestionCategoryService;
 import at.jku.dke.etutor.task_administration.moodle.QuestionService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -197,27 +194,6 @@ public class TaskService {
 
         return task;
     }
-    @Transactional
-    public void createMoodleObjectsForTaskCategory(Task task) {
-        if (!taskMoodleidRepository.findById_TaskId(task.getId()).isEmpty())
-            return;
-
-        this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
-            moodleIds.ifPresent(this.taskMoodleidRepository::saveAll);
-        });
-    }
-    @Transactional
-    public void updateMoodleObjectsForTaskCategory(Task task) {
-
-        this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
-            if (moodleIds.isPresent()) {
-                //this.taskMoodleidRepository.deleteByTaskId(task.getId());
-                LOG.info("All tasks got from Task {} got deleted", task.getId());
-                this.taskMoodleidRepository.saveAll(moodleIds.get());
-
-            }
-        });
-    }
 
 
 
@@ -322,6 +298,35 @@ public class TaskService {
             this.repository.deleteById(id);
         }
     }
+
+
+    @Transactional
+    public void createMoodleObjectsForTaskCategory(Task task) {
+        if (!taskMoodleidRepository.findById_TaskId(task.getId()).isEmpty())
+            return;
+
+        this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
+            moodleIds.ifPresent(this.taskMoodleidRepository::saveAll);
+        });
+    }
+    @Transactional
+    public void updateMoodleObjectsForTaskCategory(Task task) {
+
+        this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
+            if (moodleIds.isPresent()) {
+                this.taskMoodleidRepository.deleteByTaskId(task.getId());
+                LOG.info("All MoodleIds from Task {} got deleted", task.getId());
+                this.taskMoodleidRepository.saveAll(moodleIds.get());
+
+            }
+        });
+    }
+
+
+
+
+
+
 
     /**
      * Submits the specified submission.
