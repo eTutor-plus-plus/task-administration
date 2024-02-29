@@ -2,4 +2,7 @@ blank_issues_enabled: true
 contact_links:
   - name: Contribution Details
     url: https://github.com/eTutor-plus-plus/task-administration/blob/main/CONTRIBUTING.md
-    about: Before opening a new issue, please make sure to read CONTRIBUTING.md
+    about: Before opening a new issue, please make sure to read CONTRIBUTING.md.
+  - name: Documentation
+    url: https://github.com/eTutor-plus-plus/task-administration/blob/main/documentation/index.md
+    about: Before opening a new issue, have a look at the documentation.
