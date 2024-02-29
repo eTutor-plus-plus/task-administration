@@ -95,6 +95,8 @@ public class WebConfig implements WebMvcConfigurer {
         public void add(HttpExchange exchange) {
             if (exchange.getRequest().getUri().getPath().startsWith("/actuator") ||
                 exchange.getRequest().getUri().getPath().startsWith("/app") ||
+                exchange.getRequest().getUri().getPath().startsWith("/docs") ||
+                exchange.getRequest().getUri().getPath().startsWith("/swagger-ui") ||
                 exchange.getRequest().getUri().getPath().equals("/")) {
                 return;
             }
