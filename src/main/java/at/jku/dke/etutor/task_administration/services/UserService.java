@@ -134,7 +134,7 @@ public class UserService {
         user.setLastName(dto.lastName());
         user.setEmail(dto.email());
         user.setEnabled(dto.enabled());
-        user.setActivatedDate(null);
+        user.setActivatedDate(dto.activated());
         user.setPassword(dto.username() + UUID.randomUUID());
         if (fullAdmin) {
             user.setFullAdmin(dto.fullAdmin());
@@ -153,16 +153,17 @@ public class UserService {
         var token = new UserToken(TokenType.ACTIVATE_ACCOUNT, dbUser, RandomService.INSTANCE.randomString(50), OffsetDateTime.now().plusDays(7));
         this.userTokenRepository.save(token);
 
-        // Send mail
-        this.mailService.sendMail(user.getEmail(),
-            this.messageSource.getMessage("activateAccount.mail.subject", null, Locale.ENGLISH),
-            this.messageSource.getMessage("activateAccount.mail.text", new Object[]{
-                String.format("%s %s", user.getFirstName(), user.getLastName()),
-                user.getUsername(),
-                ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString(),
-                token.getToken()
-            }, Locale.ENGLISH));
-
+        // Send mail (if not yet activated)
+        if(dbUser.getActivatedDate() == null) {
+            this.mailService.sendMail(user.getEmail(),
+                this.messageSource.getMessage("activateAccount.mail.subject", null, Locale.ENGLISH),
+                this.messageSource.getMessage("activateAccount.mail.text", new Object[]{
+                    String.format("%s %s", user.getFirstName(), user.getLastName()),
+                    user.getUsername(),
+                    ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString(),
+                    token.getToken()
+                }, Locale.ENGLISH));
+        }
         return dbUser;
     }
 

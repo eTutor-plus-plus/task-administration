@@ -31,3 +31,7 @@ moodle:
   enabled: true
   token: b27a8b79eedf23228c490c0c277c97e5
   url: http://localhost:8000/
+
+# Cors Configuration
+cors:
+  allowed-origins: http://localhost:4200 # comma-separated list of allowed origins

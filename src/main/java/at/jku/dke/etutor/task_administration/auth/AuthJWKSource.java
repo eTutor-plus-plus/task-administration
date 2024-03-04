@@ -128,7 +128,7 @@ public class AuthJWKSource {
         }
 
         // if keys are too old, generate new ones
-        if (Files.readAttributes(this.privateKeyPath, BasicFileAttributes.class).lastModifiedTime().toInstant().isBefore(Instant.now().minus(30, ChronoUnit.DAYS))) {
+        if (Files.getLastModifiedTime(this.privateKeyPath).toInstant().isBefore(Instant.now().minus(30, ChronoUnit.DAYS))) {
             this.generateKeys();
             return;
         }

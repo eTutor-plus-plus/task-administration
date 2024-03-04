@@ -6,7 +6,7 @@ This application provides a REST-interface for the eTutor task administration.
 
 In development environment, the API documentation is available at http://localhost:8080/docs.
 
-See [CONTRIBUTING.md](https://github.com/eTutor-plus-plus/task-administration/blob/main/CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## Docker
 
@@ -65,7 +65,7 @@ In production environment, the application requires two database users:
 * A database administrator user which has the permission to create the tables.
 * A JPA user which has read/write access (`SELECT, INSERT, UPDATE, DELETE, TRUNCATE`) to the database tables (see `./docker/create_user.sh` for example user creation statement).
 
-> In development environment, one user will be used for both.
+> In development environment, one user will be used for both by default.
 
 The users must be configured via environment variables. The clients have to be configured via environment variables as well (`X`/`Y` stands for a 0-based index).
 

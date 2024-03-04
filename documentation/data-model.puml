@@ -1,0 +1,140 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+'skinparam classAttributeIconSize 0
+top to bottom direction
+hide empty members
+hide circle
+
+' # = PK
+' ~ = UNIQUE
+' + = NULLABLE
+' italic = FK
+
+class users {
+   # id: bigint
+   {field} ~ username: varchar(50)
+   {field} first_name: varchar(100)
+   {field} last_name: varchar(100)
+   {field} ~ email: varchar(255)
+   active: boolean
+   {field} password_hash: varchar(255)
+   failed_login_count: integer
+   full_admin: boolean
+   + activated_date: timestamptz
+   + lockout_end: timestamptz
+   {field} created_by: varchar(255)
+   created_date: timestamptz
+   {field} last_modified_by: varchar(255)
+   last_modified_date: timestamptz
+}
+
+class user_tokens {
+   # id: bigint
+   type: token_type
+   //user_id//: bigint
+   {field} token: varchar(255)
+   expires_at: timestamptz
+   --
+   ~ (type, token)
+}
+
+class organizational_units {
+   # id: bigint
+   {field} name: varchar(255)
+   + moodle_id: integer
+   {field} created_by: varchar(255)
+   created_date: timestamptz
+   {field} last_modified_by: varchar(255)
+   last_modified_date: timestamptz
+}
+
+class organizational_unit_users {
+   role: roles
+   //organizational_unit_id//: bigint
+   //user_id//: bigint
+   --
+   # (organizational_unit_id, user_id)
+}
+
+class task_categories {
+   # id: bigint
+   {field} name: varchar(100)
+   + //parent_id//: bigint
+   //ou_id//: bigint
+   + moodle_id: integer
+   {field} created_by: varchar(255)
+   created_date: timestamptz
+   {field} last_modified_by: varchar(255)
+   last_modified_date: timestamptz
+}
+
+class task_groups {
+   # id: bigint
+   {field} name: varchar(100)
+   description_de: text
+   description_en: text
+   {field} task_group_type: varchar(100)
+   status: task_status
+   //ou_id//: bigint
+   {field} created_by: varchar(255)
+   created_date: timestamptz
+   {field} last_modified_by: varchar(255)
+   last_modified_date: timestamptz
+   {field} + approved_by: varchar(255)
+   + approved_date: timestamptz
+}
+
+class tasks {
+   # id: bigint
+   //ou_id//: bigint
+   {field} title: varchar(100)
+   description_de: text
+   description_en: text
+   difficulty: smallint
+   {field} max_points: numeric(10,2)
+   {field} task_type: varchar(100)
+   status: task_status
+   + //task_group_id//: bigint
+   + moodle_id: integer[]
+   {field} created_by: varchar(255)
+   created_date: timestamptz
+   {field} last_modified_by: varchar(255)
+   last_modified_date: timestamptz
+   {field} + approved_by: varchar(255)
+   + approved_date: timestamptz
+}
+
+class tasks_task_categories {
+   //task_category_id//: bigint
+   //task_id//: bigint
+   --
+   # (task_category_id, task_id)
+}
+
+class task_apps {
+   # id: bigint
+   {field} ~task_type: varchar(100)
+   {field} url: varchar(255)
+   {field} + api_key: varchar(255)
+   {field} created_by: varchar(255)
+   created_date: timestamptz
+   {field} last_modified_by: varchar(255)
+   last_modified_date: timestamptz
+}
+
+users "1" -- "*" user_tokens : has >
+organizational_unit_users "*" -- "1" organizational_units : has <
+organizational_unit_users "*" -- "1" users : belongs to <
+
+task_categories "*" -- "1" organizational_units : "belongs to" >
+task_categories "*" -- "0..1" task_categories : "has parent" >
+
+task_groups "*" -- "1" organizational_units : "belongs to" >
+
+tasks "*" -- "1" organizational_units : "belongs to" >
+tasks "*" -- "0..1" task_groups : "belongs to" >
+
+tasks_task_categories "*" -- "1" task_categories : has <
+tasks_task_categories "*" -- "1"  tasks : belongs to <
+@enduml

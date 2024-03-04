@@ -12,7 +12,6 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
@@ -35,12 +34,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * The application security configuration.
@@ -50,10 +49,15 @@ import java.security.spec.InvalidKeySpecException;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private final Environment environment;
+
     /**
      * Creates a new instance of class {@link SecurityConfig}.
+     *
+     * @param environment The environment of the application.
      */
-    public SecurityConfig() {
+    public SecurityConfig(Environment environment) {
+        this.environment = environment;
     }
 
     /**
@@ -89,6 +93,7 @@ public class SecurityConfig {
             reg.requestMatchers("/auth/refresh").authenticated();
 
             // API
+            reg.requestMatchers("/api/forwardPublic/**").permitAll();
             reg.requestMatchers("/api/**").authenticated();
 
             // Other
@@ -103,24 +108,25 @@ public class SecurityConfig {
             jwtConf.jwtAuthenticationConverter(customJwtAuthenticationConverter());
         }));
 
-        return http.build();
-    }
+        http.cors(cors -> {
+            var originsString = env.getProperty("cors.allowed-origins");
+            if (originsString == null)
+                return;
+            var origins = originsString.split(",");
+            if (origins.length == 0)
+                return;
 
-    /**
-     * Configures the CORS configuration source.
-     *
-     * @return The CORS configuration source.
-     */
-    @Bean
-    @Profile("dev")
-    public CorsConfigurationSource corsConfigurationSource() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedHeader(CorsConfiguration.ALL);
-        config.addAllowedMethod(CorsConfiguration.ALL);
-        config.addAllowedOrigin(CorsConfiguration.ALL);
-        source.registerCorsConfiguration("/**", config);
-        return source;
+            cors.configurationSource(request -> {
+                var config = new CorsConfiguration();
+                config.setAllowedOrigins(Arrays.asList(origins));
+                config.setAllowedMethods(List.of(CorsConfiguration.ALL));
+                config.setAllowedHeaders(List.of(CorsConfiguration.ALL));
+                config.setAllowCredentials(false);
+                return config;
+            });
+        });
+
+        return http.build();
     }
 
     /**

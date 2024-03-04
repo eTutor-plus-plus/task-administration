@@ -29,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * This class provides methods for managing {@link TaskGroup}s.
@@ -141,11 +142,11 @@ public class TaskGroupService {
         var result = this.taskAppCommunicationService.createTaskGroup(taskGroup.getId(), dto);
         if (result != null) {
             boolean modified = false;
-            if (result.descriptionDe() != null && taskGroup.getDescriptionDe().trim().isBlank()) {
+            if (result.descriptionDe() != null && (taskGroup.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionDe()))) {
                 taskGroup.setDescriptionDe(result.descriptionDe());
                 modified = true;
             }
-            if (result.descriptionEn() != null && taskGroup.getDescriptionEn().trim().isBlank()) {
+            if (result.descriptionEn() != null && (taskGroup.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionEn()))) {
                 taskGroup.setDescriptionEn(result.descriptionEn());
                 modified = true;
             }
@@ -202,9 +203,9 @@ public class TaskGroupService {
 
         var result = this.taskAppCommunicationService.updateTaskGroup(taskGroup.getId(), dto);
         if (result != null) {
-            if (result.descriptionDe() != null && taskGroup.getDescriptionDe().trim().isBlank())
+            if (result.descriptionDe() != null && (taskGroup.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionDe())))
                 taskGroup.setDescriptionDe(result.descriptionDe());
-            if (result.descriptionEn() != null && taskGroup.getDescriptionEn().trim().isBlank())
+            if (result.descriptionEn() != null && (taskGroup.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionEn())))
                 taskGroup.setDescriptionEn(result.descriptionEn());
         }
         this.repository.save(taskGroup);
