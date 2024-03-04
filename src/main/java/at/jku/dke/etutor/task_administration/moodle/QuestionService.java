@@ -20,13 +20,14 @@ public class QuestionService extends MoodleService {
     private final TaskMoodleidRepository taskMoodleidRepository;
 
     /**
-     * Creates a new instance of class {@link MoodleService}.
+     * Creates a new instance of class {@link QuestionService}.
      *
      * @param config       The moodle configuration.
      * @param objectMapper The object mapper.
+     * @param categoryRepository The category Repository.
+     * @param taskMoodleidRepository The Moodleid Repository.
      */
-    protected QuestionService(MoodleConfig config, ObjectMapper objectMapper, TaskCategoryRepository categoryRepository,
-                              TaskMoodleidRepository taskMoodleidRepository) {
+    protected QuestionService(MoodleConfig config, ObjectMapper objectMapper, TaskCategoryRepository categoryRepository, TaskMoodleidRepository taskMoodleidRepository) {
         super(config, objectMapper);
 
 
@@ -39,8 +40,8 @@ public class QuestionService extends MoodleService {
     /**
      * Creates a question in Moodle for each category in the given Task
      *
-     * @param task The task to create the questions from
-     * @return A list of all created moodleIDs as List<TaskMoodleid>
+     * @param task The task to create the questions.
+     * @return A list of all created moodleIDs as List<TaskMoodleid>.
      */
     @Async
     public CompletableFuture<Optional<List<TaskMoodleid>>> createQuestionFromTask(Task task) {
@@ -48,7 +49,7 @@ public class QuestionService extends MoodleService {
         if (this.config.isDisabled()) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
-        if(task.getTaskCategories().isEmpty()){
+        if (task.getTaskCategories().isEmpty()) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
         //vulnerable to org.hibernate.LazyInitializationException
@@ -57,15 +58,13 @@ public class QuestionService extends MoodleService {
         //Array of all categoryIds in which the task should exist
         Object[] categoryIds = task.getTaskCategories().stream().map(AuditedEntity::getId).toArray();
 
-        for(int i =0; i< categoryIds.length;i++) {
+        for (int i = 0; i < categoryIds.length; i++) {
 
 
             int moodleId = categoryRepository.findById((long) categoryIds[i]).get().getMoodleId();
-            LOG.info("Creating question from Task {} for category {}", task.getId(), moodleId);
 
             //format questiontext
-            String qtext = "<span lang='de'>" + task.getDescriptionDe() + "</span> "
-                + "<span lang='en'>" + task.getDescriptionEn() + "</span>";
+            String qtext = "<span lang='de'>" + task.getDescriptionDe() + "</span> " + "<span lang='en'>" + task.getDescriptionEn() + "</span>";
 
             Map<String, String> body_question = new HashMap<>();
             body_question.put("data[category_id]", String.valueOf(moodleId));
@@ -76,14 +75,13 @@ public class QuestionService extends MoodleService {
             body_question.put("data[points]", task.getMaxPoints().toString());
             body_question.put("data[coderunnertype]", "etutor-" + task.getTaskType());
             body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":3}");
-            LOG.info(body_question.toString());
 
 
             try {
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_create_question"), body_question);
                 Question result = objectMapper.readValue(responseBody, Question.class);
-                moodleIds.add(new TaskMoodleid(task,categoryRepository.findById((long) categoryIds[i]).get(),result.questionid));
-                LOG.info("Creating question with qid {}", result.questionid);
+                moodleIds.add(new TaskMoodleid(task, categoryRepository.findById((long) categoryIds[i]).get(), result.questionid));
+                LOG.info("Created question with qid {}", result.questionid);
 
             } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
                 LOG.error("Failed to create Question {}.", task.getId(), ex);
@@ -96,8 +94,8 @@ public class QuestionService extends MoodleService {
     /**
      * Updates questions already existing in Moodle to the given task
      *
-     * @param task Task to which the questions should be updated
-     * @return A list of all created moodleIDs as List<TaskMoodleid>
+     * @param task Task to which the questions should be updated.
+     * @return A list of all created moodleIDs as List<TaskMoodleid>.
      */
     public CompletableFuture<Optional<List<TaskMoodleid>>> updateQuestionFromTask(Task task) {
         LOG.info("starting moodle Task sync");
@@ -110,16 +108,12 @@ public class QuestionService extends MoodleService {
 
         //List of all categories in which the question should no longer be contained
         List<TaskMoodleid> deprecatedCategories = new ArrayList<>(taskMoodleidRepository.findById_TaskId(task.getId()));
-        deprecatedCategories =   deprecatedCategories.stream()
-            .filter(x -> !task.getTaskCategories().contains(x.getTaskCategory()))
-            .toList();
+        deprecatedCategories = deprecatedCategories.stream().filter(x -> !task.getTaskCategories().contains(x.getTaskCategory())).toList();
 
 
         //List of all categories keeping the question
         List<TaskMoodleid> updateTaskCategories = new ArrayList<>(taskMoodleidRepository.findById_TaskId(task.getId()));
-        updateTaskCategories = updateTaskCategories.stream()
-            .filter(x -> task.getTaskCategories().contains(x.getTaskCategory()))
-            .toList();
+        updateTaskCategories = updateTaskCategories.stream().filter(x -> task.getTaskCategories().contains(x.getTaskCategory())).toList();
 
         //List of all category Ids which are either deprecated or already existing and persisting
         Set<Long> oldCategoryIds = new HashSet<>();
@@ -127,9 +121,7 @@ public class QuestionService extends MoodleService {
         updateTaskCategories.forEach(x -> oldCategoryIds.add(x.getTaskCategory().getId()));
 
         //List of all Categories newly getting this question
-        List<TaskCategory> newToCreateTaskCategories = newCategories.stream()
-            .filter(x -> !oldCategoryIds.contains(x.getId()))
-            .toList();
+        List<TaskCategory> newToCreateTaskCategories = newCategories.stream().filter(x -> !oldCategoryIds.contains(x.getId())).toList();
 
 
         ArrayList<TaskMoodleid> moodleIds = new ArrayList<>();
@@ -137,13 +129,12 @@ public class QuestionService extends MoodleService {
         //Creating the questions which are new
         Object[] newToCreateCategoryIds = newToCreateTaskCategories.stream().map(x -> x.getId()).toArray();
 
-        for(int i =0; i< newToCreateCategoryIds.length;i++) {
+        for (int i = 0; i < newToCreateCategoryIds.length; i++) {
             int moodleId = categoryRepository.findById((long) newToCreateCategoryIds[i]).orElseThrow().getMoodleId();
-            LOG.info("Creating question from Task {} for category {}", task.getId(), moodleId);
+
 
             //format questiontext
-            String qtext = "<span lang='de'>" + task.getDescriptionDe() + "</span> "
-                + "<span lang='en'>" + task.getDescriptionEn() + "</span>";
+            String qtext = "<span lang='de'>" + task.getDescriptionDe() + "</span> " + "<span lang='en'>" + task.getDescriptionEn() + "</span>";
 
             Map<String, String> body_question = new HashMap<>();
             body_question.put("data[category_id]", String.valueOf(moodleId));
@@ -154,14 +145,13 @@ public class QuestionService extends MoodleService {
             body_question.put("data[coderunnertype]", "etutor-" + task.getTaskType());
             body_question.put("data[course_category_id]", task.getOrganizationalUnit().getMoodleId().toString());
             body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":3}");
-            LOG.info(body_question.toString());
 
 
             try {
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_create_question"), body_question);
                 Question result = objectMapper.readValue(responseBody, Question.class);
-                moodleIds.add(new TaskMoodleid(task,categoryRepository.findById((long) newToCreateCategoryIds[i]).get(),result.questionid));
-                LOG.info("Creating question with qid {}", result.questionid);
+                moodleIds.add(new TaskMoodleid(task, categoryRepository.findById((long) newToCreateCategoryIds[i]).get(), result.questionid));
+                LOG.info("Created question with qid {}", result.questionid);
 
             } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
                 LOG.error("Failed to create Question {}.", task.getId(), ex);
@@ -170,23 +160,20 @@ public class QuestionService extends MoodleService {
         }
 
         //Changing the title of old (no longer supported categories) questions to DEPRECATED_
-        Object[] deprecatedQuestionIds = deprecatedCategories.stream().map(x->x.getMoodleId()).toArray();
+        Object[] deprecatedQuestionIds = deprecatedCategories.stream().map(x -> x.getMoodleId()).toArray();
 
-        for(int i =0; i< deprecatedQuestionIds.length;i++) {
+        for (int i = 0; i < deprecatedQuestionIds.length; i++) {
 
-            LOG.info("Deprecating question from Task {} for category {}", task.getId(), deprecatedQuestionIds[i]);
 
             Map<String, String> body_question = new HashMap<>();
             body_question.put("data[course_category_id]", task.getOrganizationalUnit().getMoodleId().toString());
             body_question.put("data[question_id]", deprecatedQuestionIds[i].toString());
             body_question.put("data[title_extension]", "DEPRECATED_");
-            LOG.info(body_question.toString());
-
 
             try {
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_deprecate_old_question"), body_question);
                 Question result = objectMapper.readValue(responseBody, Question.class);
-                LOG.info("Deprecate question with qid {}", result.questionid);
+                LOG.info("Deprecated question with qid {}", result.questionid);
 
             } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
                 LOG.error("Failed to deprecate old Question {}.", task.getId(), ex);
@@ -198,16 +185,12 @@ public class QuestionService extends MoodleService {
         //Updates existing questions by creating a new question and updating the Version in the questionbank
         Object[] updateCategoryIds = updateTaskCategories.stream().map(x -> x.getTaskCategory().getId()).toArray();
 
-        for(int i =0; i< updateCategoryIds.length;i++) {
-            long oldMdoodleId = taskMoodleidRepository.findById_TaskIdAndId_TaskCategoryId(task.getId(),(long)updateCategoryIds[i]).get().getMoodleId();
-
+        for (int i = 0; i < updateCategoryIds.length; i++) {
+            long oldMdoodleId = taskMoodleidRepository.findById_TaskIdAndId_TaskCategoryId(task.getId(), (long) updateCategoryIds[i]).get().getMoodleId();
             int CatMoodleId = categoryRepository.findById((long) updateCategoryIds[i]).get().getMoodleId();
 
-            LOG.info("updating question from Task {} for category {}", task.getId(), CatMoodleId);
-
             //format questiontext
-            String qtext = "<span lang='de'>" + task.getDescriptionDe() + "</span> "
-                + "<span lang='en'>" + task.getDescriptionEn() + "</span>";
+            String qtext = "<span lang='de'>" + task.getDescriptionDe() + "</span> " + "<span lang='en'>" + task.getDescriptionEn() + "</span>";
 
             Map<String, String> body_question = new HashMap<>();
             body_question.put("data[course_category_id]", task.getOrganizationalUnit().getMoodleId().toString());
@@ -219,14 +202,13 @@ public class QuestionService extends MoodleService {
             body_question.put("data[points]", task.getMaxPoints().toString());
             body_question.put("data[coderunnertype]", "etutor-" + task.getTaskType());
             body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":3}");
-            LOG.info(body_question.toString());
 
 
             try {
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_update_question"), body_question);
                 Question result = objectMapper.readValue(responseBody, Question.class);
-                moodleIds.add(new TaskMoodleid(task,categoryRepository.findById((long) updateCategoryIds[i]).get(),result.questionid));
-                LOG.info("Creating question with qid {}", result.questionid);
+                moodleIds.add(new TaskMoodleid(task, categoryRepository.findById((long) updateCategoryIds[i]).get(), result.questionid));
+                LOG.info("Created question with qid {}", result.questionid);
 
             } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
                 LOG.error("Failed to create Question {}.", task.getId(), ex);
