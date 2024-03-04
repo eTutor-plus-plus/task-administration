@@ -59,8 +59,8 @@ public class UserService {
     /**
      * Creates a new instance of class {@link UserService}.
      *
-     * @param repository                       The user repository
-     * @param userTokenRepository              The user token repository
+     * @param repository                       The user repository.
+     * @param userTokenRepository              The user token repository.
      * @param organizationalUnitRepository     The organizational unit repository.
      * @param organizationalUnitUserRepository The organizational unit user repository.
      * @param mailService                      The mail service.

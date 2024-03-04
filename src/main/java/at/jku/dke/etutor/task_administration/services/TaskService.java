@@ -3,14 +3,12 @@ package at.jku.dke.etutor.task_administration.services;
 import at.jku.dke.etutor.task_administration.auth.SecurityHelpers;
 import at.jku.dke.etutor.task_administration.data.entities.Task;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
-import at.jku.dke.etutor.task_administration.data.repositories.OrganizationalUnitRepository;
-import at.jku.dke.etutor.task_administration.data.repositories.TaskCategoryRepository;
-import at.jku.dke.etutor.task_administration.data.repositories.TaskGroupRepository;
-import at.jku.dke.etutor.task_administration.data.repositories.TaskRepository;
+import at.jku.dke.etutor.task_administration.data.repositories.*;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
 import at.jku.dke.etutor.task_administration.dto.SubmitSubmissionDto;
 import at.jku.dke.etutor.task_administration.dto.TaskDto;
+import at.jku.dke.etutor.task_administration.moodle.QuestionService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -49,6 +47,10 @@ public class TaskService {
     private final OrganizationalUnitRepository organizationalUnitRepository;
     private final TaskAppCommunicationService taskAppCommunicationService;
 
+    private final TaskMoodleidRepository taskMoodleidRepository;
+
+    private final QuestionService questionService;
+
     /**
      * Creates a new instance of class {@link TaskService}.
      *
@@ -57,14 +59,17 @@ public class TaskService {
      * @param taskCategoryRepository       The task category repository.
      * @param organizationalUnitRepository The organizational unit repository.
      * @param taskAppCommunicationService  The task app communication service.
+     * @param taskMoodleidRepository       The Moodleid Repository for Tasks.
+     * @param questionService              The Question Service.
      */
-    public TaskService(TaskRepository repository, TaskGroupRepository taskGroupRepository, TaskCategoryRepository taskCategoryRepository,
-                       OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService) {
+    public TaskService(TaskRepository repository, TaskGroupRepository taskGroupRepository, TaskCategoryRepository taskCategoryRepository, OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService, TaskMoodleidRepository taskMoodleidRepository, QuestionService questionService) {
         this.repository = repository;
         this.taskGroupRepository = taskGroupRepository;
         this.taskCategoryRepository = taskCategoryRepository;
         this.organizationalUnitRepository = organizationalUnitRepository;
         this.taskAppCommunicationService = taskAppCommunicationService;
+        this.taskMoodleidRepository = taskMoodleidRepository;
+        this.questionService = questionService;
     }
 
     //#region --- View ---
@@ -139,9 +144,7 @@ public class TaskService {
         task.setDifficulty(dto.difficulty());
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
-
-        if (dto.taskGroupId() != null)
-            task.setTaskGroup(this.taskGroupRepository.getReferenceById(dto.taskGroupId()));
+        if (dto.taskGroupId() != null) task.setTaskGroup(this.taskGroupRepository.getReferenceById(dto.taskGroupId()));
 
         if (dto.taskCategoryIds() != null) {
             for (Long id : dto.taskCategoryIds()) {
@@ -149,8 +152,7 @@ public class TaskService {
             }
         }
 
-        if (SecurityHelpers.isTutor(dto.organizationalUnitId()))
-            task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
+        if (SecurityHelpers.isTutor(dto.organizationalUnitId())) task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
         else {
             task.setStatus(dto.status());
             if (dto.status().equals(TaskStatus.APPROVED)) {
@@ -182,12 +184,18 @@ public class TaskService {
                 task.setMaxPoints(result.maxPoints());
                 modified = true;
             }
-            if (modified)
-                this.repository.save(task);
+            if (modified) this.repository.save(task);
+
+
+            //only syncing to moodle if the task is approved
+            if (task.getStatus() == TaskStatus.APPROVED) {
+                this.createMoodleObjectsForTask(task);
+            }
         }
 
         return task;
     }
+
 
     /**
      * Updates an existing task.
@@ -202,14 +210,12 @@ public class TaskService {
         var task = this.repository.findByIdAndTaskCategories(id).orElseThrow(() -> new EntityNotFoundException("Task " + id + " does not exist."));
         if (concurrencyToken != null && task.getLastModifiedDate() != null && task.getLastModifiedDate().isAfter(concurrencyToken))
             throw new ConcurrencyFailureException("Task has been modified in the meantime");
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(task.getOrganizationalUnit().getId()))
-            throw new EntityNotFoundException();
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(task.getOrganizationalUnit().getId())) throw new EntityNotFoundException();
         if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId()))
             throw new ValidationException("Unknown organizational unit");
         if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
             throw new InsufficientAuthenticationException("User is not allowed to modify the task");
-        if (!task.getTaskType().equals(dto.taskType()))
-            throw new ValidationException("Changing the task type is not supported.");
+        if (!task.getTaskType().equals(dto.taskType())) throw new ValidationException("Changing the task type is not supported.");
 
         LOG.info("Updating task {}", id);
         task.setOrganizationalUnit(this.organizationalUnitRepository.getReferenceById(dto.organizationalUnitId()));
@@ -220,21 +226,18 @@ public class TaskService {
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
         task.setTaskGroup(dto.taskGroupId() == null ? null : this.taskGroupRepository.getReferenceById(dto.taskGroupId()));
+        task.setIsMoodleSynced(false);
 
         if (dto.taskCategoryIds() != null) {
             var toRemove = task.getTaskCategories().stream().filter(x -> !dto.taskCategoryIds().contains(x.getId())).toList();
-            var toAdd = dto.taskCategoryIds().stream()
-                .filter(x -> task.getTaskCategories().stream().noneMatch(y -> y.getId().equals(x)))
-                .map(this.taskCategoryRepository::getReferenceById)
-                .toList();
+            var toAdd = dto.taskCategoryIds().stream().filter(x -> task.getTaskCategories().stream().noneMatch(y -> y.getId().equals(x))).map(this.taskCategoryRepository::getReferenceById).toList();
             toRemove.forEach(task.getTaskCategories()::remove);
             toAdd.forEach(task.getTaskCategories()::add);
         } else {
             task.getTaskCategories().clear();
         }
 
-        if (SecurityHelpers.isTutor(dto.organizationalUnitId()))
-            task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
+        if (SecurityHelpers.isTutor(dto.organizationalUnitId())) task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
         else {
             if (!task.getStatus().equals(dto.status())) {
                 task.setStatus(dto.status());
@@ -261,6 +264,11 @@ public class TaskService {
         }
 
         this.repository.save(task);
+
+
+        if (task.getStatus() == TaskStatus.APPROVED) {
+            this.updateMoodleObjectsForTask(task);
+        }
     }
 
     /**
@@ -272,8 +280,7 @@ public class TaskService {
     public void delete(long id) {
         var orgUnit = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
         var task = this.repository.findById(id).orElse(null);
-        if (task == null)
-            return;
+        if (task == null) return;
 
         if (SecurityHelpers.isFullAdmin() || orgUnit.contains(task.getOrganizationalUnit().getId())) {
             if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
@@ -284,6 +291,29 @@ public class TaskService {
             this.repository.deleteById(id);
         }
     }
+
+
+    @Transactional
+    public void createMoodleObjectsForTask(Task task) {
+        if (!taskMoodleidRepository.findById_TaskId(task.getId()).isEmpty()) return;
+
+        this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
+            moodleIds.ifPresent(this.taskMoodleidRepository::saveAll);
+        });
+    }
+
+    @Transactional
+    public void updateMoodleObjectsForTask(Task task) {
+
+        this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
+            if (moodleIds.isPresent()) {
+                this.taskMoodleidRepository.deleteByTaskId(task.getId());
+                LOG.info("All MoodleIds from Task {} got deleted", task.getId());
+                this.taskMoodleidRepository.saveAll(moodleIds.get());
+            }
+        });
+    }
+
 
     /**
      * Submits the specified submission.
@@ -310,16 +340,11 @@ public class TaskService {
             var predicates = new ArrayList<Predicate>();
 
             // User-specified filters
-            if (this.name != null)
-                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), '%' + this.name.toLowerCase() + '%'));
-            if (this.status != null)
-                predicates.add(criteriaBuilder.equal(root.get("status"), criteriaBuilder.literal(this.status)));
-            if (taskType != null)
-                predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("taskType")), this.taskType.toLowerCase()));
-            if (orgUnit != null)
-                predicates.add(criteriaBuilder.equal(root.get("organizationalUnit").get("id"), orgUnit));
-            if (taskGroup != null)
-                predicates.add(criteriaBuilder.equal(root.get("taskGroup").get("id"), taskGroup));
+            if (this.name != null) predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), '%' + this.name.toLowerCase() + '%'));
+            if (this.status != null) predicates.add(criteriaBuilder.equal(root.get("status"), criteriaBuilder.literal(this.status)));
+            if (taskType != null) predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("taskType")), this.taskType.toLowerCase()));
+            if (orgUnit != null) predicates.add(criteriaBuilder.equal(root.get("organizationalUnit").get("id"), orgUnit));
+            if (taskGroup != null) predicates.add(criteriaBuilder.equal(root.get("taskGroup").get("id"), taskGroup));
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
