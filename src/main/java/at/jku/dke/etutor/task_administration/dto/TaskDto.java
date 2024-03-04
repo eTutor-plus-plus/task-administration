@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  * @param approvedDate         The date when the task was approved.
  */
 public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @NotNull String title, @NotNull String descriptionDe, @NotNull String descriptionEn,
-                      @NotNull Short difficulty, @NotNull BigDecimal maxPoints, @NotNull String taskType, @NotNull TaskStatus status, Long taskGroupId, Set<Long> taskCategoryIds,
+                      @NotNull Short difficulty, @NotNull BigDecimal maxPoints, @NotNull String taskType, @NotNull TaskStatus status, Long taskGroupId, Set<Long> taskCategoryIds, boolean moodleSynced,
                       String createdBy, Instant createdDate, String lastModifiedBy, Instant lastModifiedDate, String approvedBy,
                       OffsetDateTime approvedDate) implements Serializable {
     /**
@@ -55,12 +55,14 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getStatus(),
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             null, // prevent lazy loading of not required categories
+            task.getIsMoodleSynced(),
             task.getCreatedBy(),
             task.getCreatedDate(),
             task.getLastModifiedBy(),
             task.getLastModifiedDate(),
             task.getApprovedBy(),
             task.getApprovedDate());
+
     }
 
     /**
@@ -81,6 +83,7 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getStatus(),
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             taskCategories != null ? taskCategories.stream().map(AuditedEntity::getId).collect(Collectors.toSet()) : null,
+            task.getIsMoodleSynced(),
             task.getCreatedBy(),
             task.getCreatedDate(),
             task.getLastModifiedBy(),

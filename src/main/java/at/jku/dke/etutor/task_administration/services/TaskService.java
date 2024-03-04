@@ -139,7 +139,6 @@ public class TaskService {
         task.setDifficulty(dto.difficulty());
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
-
         if (dto.taskGroupId() != null)
             task.setTaskGroup(this.taskGroupRepository.getReferenceById(dto.taskGroupId()));
 
@@ -188,7 +187,7 @@ public class TaskService {
 
             //only syncing to moodle if the task is approved
             if(task.getStatus()==TaskStatus.APPROVED) {
-                this.createMoodleObjectsForTaskCategory(task);
+                this.createMoodleObjectsForTask(task);
             }
         }
 
@@ -228,7 +227,7 @@ public class TaskService {
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
         task.setTaskGroup(dto.taskGroupId() == null ? null : this.taskGroupRepository.getReferenceById(dto.taskGroupId()));
-
+        task.setIsMoodleSynced(false);
 
         if (dto.taskCategoryIds() != null) {
             var toRemove = task.getTaskCategories().stream().filter(x -> !dto.taskCategoryIds().contains(x.getId())).toList();
@@ -273,7 +272,7 @@ public class TaskService {
 
 
         if(task.getStatus()==TaskStatus.APPROVED) {
-            this.updateMoodleObjectsForTaskCategory(task);
+            this.updateMoodleObjectsForTask(task);
         }
     }
 
@@ -301,16 +300,17 @@ public class TaskService {
 
 
     @Transactional
-    public void createMoodleObjectsForTaskCategory(Task task) {
+    public void createMoodleObjectsForTask(Task task) {
         if (!taskMoodleidRepository.findById_TaskId(task.getId()).isEmpty())
             return;
 
         this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
             moodleIds.ifPresent(this.taskMoodleidRepository::saveAll);
+
         });
     }
     @Transactional
-    public void updateMoodleObjectsForTaskCategory(Task task) {
+    public void updateMoodleObjectsForTask(Task task) {
 
         this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
             if (moodleIds.isPresent()) {

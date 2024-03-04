@@ -1,5 +1,6 @@
 package at.jku.dke.etutor.task_administration.data.entities;
 
+import at.jku.dke.etutor.task_administration.data.repositories.TaskMoodleidRepository;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -52,6 +53,11 @@ public class Task extends AuditedEntity {
     @NotNull
     @Column(name = "task_type", nullable = false, length = 100)
     private String taskType;
+
+
+    @NotNull
+    @Column(name = "moodle_sync", nullable = false)
+    private boolean isMoodleSynced;
 
     @NotNull
     @Column(name = "status", columnDefinition = "task_status not null")
@@ -282,6 +288,19 @@ public class Task extends AuditedEntity {
     }
 
     /**
+     * Gets the moodleSync identifier
+     *
+     * @return boolean whether moodle is synced
+     */
+    public boolean getIsMoodleSynced() {
+        return isMoodleSynced;
+    }
+
+    public void setIsMoodleSynced(boolean isMoodleSynced) {
+        this.isMoodleSynced = isMoodleSynced;
+    }
+
+    /**
      * Gets the task categories.
      *
      * @return The task categories.
@@ -308,4 +327,5 @@ public class Task extends AuditedEntity {
             .add("status=" + status)
             .toString();
     }
+
 }
