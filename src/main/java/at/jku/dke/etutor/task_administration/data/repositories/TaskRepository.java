@@ -28,4 +28,13 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
      */
     @Query("SELECT t FROM Task t LEFT JOIN FETCH t.taskCategories WHERE t.id = ?1")
     Optional<Task> findByIdAndTaskCategories(Long id);
+
+    /**
+     * Returns the task with the given id and fetches the organizational unit.
+     *
+     * @param id The id of the task.
+     * @return The task with the given id.
+     */
+    @Query("SELECT t FROM Task t LEFT JOIN FETCH t.organizationalUnit WHERE t.id = ?1")
+    Optional<Task> findByIdAndOrganizationalUnit(Long id);
 }

@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 @Embeddable
-public class TaskMoodleidId implements Serializable {
+public class TaskMoodleIdId implements Serializable {
     private static final long serialVersionUID = -8822024911243038729L;
     @NotNull
     @Column(name = "task_category_id", nullable = false)
@@ -39,7 +39,7 @@ public class TaskMoodleidId implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        TaskMoodleidId entity = (TaskMoodleidId) o;
+        TaskMoodleIdId entity = (TaskMoodleIdId) o;
         return Objects.equals(this.taskCategoryId, entity.taskCategoryId) &&
             Objects.equals(this.taskId, entity.taskId);
     }

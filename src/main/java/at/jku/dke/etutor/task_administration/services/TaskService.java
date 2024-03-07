@@ -47,7 +47,7 @@ public class TaskService {
     private final OrganizationalUnitRepository organizationalUnitRepository;
     private final TaskAppCommunicationService taskAppCommunicationService;
 
-    private final TaskMoodleidRepository taskMoodleidRepository;
+    private final TaskMoodleIdRepository taskMoodleIdRepository;
 
     private final QuestionService questionService;
 
@@ -59,16 +59,16 @@ public class TaskService {
      * @param taskCategoryRepository       The task category repository.
      * @param organizationalUnitRepository The organizational unit repository.
      * @param taskAppCommunicationService  The task app communication service.
-     * @param taskMoodleidRepository       The Moodleid Repository for Tasks.
+     * @param taskMoodleIdRepository       The MoodleId Repository for Tasks.
      * @param questionService              The Question Service.
      */
-    public TaskService(TaskRepository repository, TaskGroupRepository taskGroupRepository, TaskCategoryRepository taskCategoryRepository, OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService, TaskMoodleidRepository taskMoodleidRepository, QuestionService questionService) {
+    public TaskService(TaskRepository repository, TaskGroupRepository taskGroupRepository, TaskCategoryRepository taskCategoryRepository, OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService, TaskMoodleIdRepository taskMoodleIdRepository, QuestionService questionService) {
         this.repository = repository;
         this.taskGroupRepository = taskGroupRepository;
         this.taskCategoryRepository = taskCategoryRepository;
         this.organizationalUnitRepository = organizationalUnitRepository;
         this.taskAppCommunicationService = taskAppCommunicationService;
-        this.taskMoodleidRepository = taskMoodleidRepository;
+        this.taskMoodleIdRepository = taskMoodleIdRepository;
         this.questionService = questionService;
     }
 
@@ -187,7 +187,7 @@ public class TaskService {
             if (modified) this.repository.save(task);
 
 
-            //only syncing to moodle if the task is approved
+            // only syncing to moodle if the task is approved
             if (task.getStatus() == TaskStatus.APPROVED) {
                 this.createMoodleObjectsForTask(task);
             }
@@ -265,9 +265,8 @@ public class TaskService {
 
         this.repository.save(task);
 
-
         if (task.getStatus() == TaskStatus.APPROVED) {
-            this.updateMoodleObjectsForTask(task);
+            this.updateMoodleObjectsForTask(task.getId());
         }
     }
 
@@ -292,28 +291,46 @@ public class TaskService {
         }
     }
 
-
+    /**
+     * Called when a task has been created.
+     *
+     * @param task The task.
+     */
     @Transactional
     public void createMoodleObjectsForTask(Task task) {
-        if (!taskMoodleidRepository.findById_TaskId(task.getId()).isEmpty()) return;
+        if (!taskMoodleIdRepository.findById_TaskId(task.getId()).isEmpty())
+            return;
 
         this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
-            moodleIds.ifPresent(this.taskMoodleidRepository::saveAll);
+            moodleIds.ifPresent(this.taskMoodleIdRepository::saveAll);
+        }).exceptionally(e -> {
+            LOG.error("Error while creating Moodle objects for task " + task.getId(), e);
+            return null;
         });
     }
 
+    /**
+     * Called when a task has been updated.
+     *
+     * @param id The task id.
+     * @throws EntityNotFoundException If the task does not exist.
+     */
     @Transactional
-    public void updateMoodleObjectsForTask(Task task) {
-
+    public void updateMoodleObjectsForTask(long id) {
+        var task = this.repository.findByIdAndOrganizationalUnit(id).orElseThrow(() -> new EntityNotFoundException("Task " + id + " does not exist."));
         this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
             if (moodleIds.isPresent()) {
-                this.taskMoodleidRepository.deleteByTaskId(task.getId());
-                LOG.info("All MoodleIds from Task {} got deleted", task.getId());
-                this.taskMoodleidRepository.saveAll(moodleIds.get());
+                this.taskMoodleIdRepository.deleteByTaskId(task.getId());
+                LOG.debug("All MoodleIds from Task {} got deleted", task.getId());
+                this.taskMoodleIdRepository.saveAll(moodleIds.get());
             }
+        }).exceptionally(e -> {
+            LOG.error("Error while updating Moodle objects for task " + id, e);
+            return null;
         });
     }
 
+    //#endregion
 
     /**
      * Submits the specified submission.
@@ -329,8 +346,6 @@ public class TaskService {
         LOG.info("Submitting task {}", submission.taskId());
         return this.taskAppCommunicationService.submit(task.getTaskType(), submission);
     }
-
-    //#endregion
 
     //#region --- Specifications ---
     private record FilterSpecification(String name, TaskStatus status, String taskType, Long orgUnit, Long taskGroup) implements Specification<Task> {

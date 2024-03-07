@@ -1,8 +1,6 @@
 package at.jku.dke.etutor.task_administration.controllers;
 
-import at.jku.dke.etutor.task_administration.data.entities.Task;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
-import at.jku.dke.etutor.task_administration.data.repositories.TaskRepository;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
 import at.jku.dke.etutor.task_administration.dto.SubmitSubmissionDto;
@@ -40,17 +38,14 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
-    private final TaskRepository taskRepository;
 
     /**
      * Creates a new instance of class {@link TaskController}.
      *
      * @param taskService The task service.
      */
-    public TaskController(TaskService taskService,
-                          TaskRepository taskRepository) {
+    public TaskController(TaskService taskService) {
         this.taskService = taskService;
-        this.taskRepository = taskRepository;
     }
 
     /**
@@ -202,6 +197,7 @@ public class TaskController {
         var result = this.taskService.submit(submissionDto);
         return ResponseEntity.ok(result);
     }
+
     /**
      * Forces moodle synchronization for the task.
      *
@@ -217,10 +213,7 @@ public class TaskController {
         @ApiResponse(responseCode = "404", description = "Task not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
     })
     public ResponseEntity<Void> syncMoodle(@PathVariable long id) {
-
-        if(!this.taskRepository.getReferenceById(id).getIsMoodleSynced()) {
-            this.taskService.updateMoodleObjectsForTask(taskRepository.getReferenceById(id));
-        }
+        this.taskService.updateMoodleObjectsForTask(id);
         return ResponseEntity.accepted().build();
     }
 }

@@ -1,19 +1,14 @@
 package at.jku.dke.etutor.task_administration.data.entities;
 
-import at.jku.dke.etutor.task_administration.data.repositories.TaskMoodleidRepository;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.hibernate.annotations.Type;
-import org.hibernate.type.descriptor.java.IntegerPrimitiveArrayJavaType;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
 

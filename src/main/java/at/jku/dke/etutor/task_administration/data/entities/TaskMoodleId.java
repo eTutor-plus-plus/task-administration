@@ -4,13 +4,11 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.io.Serializable;
-
 @Entity
 @Table(name = "task_moodleids")
-public class TaskMoodleid extends BaseEntity<TaskMoodleidId> {
+public class TaskMoodleId extends BaseEntity<TaskMoodleIdId> {
     @EmbeddedId
-    private TaskMoodleidId id;
+    private TaskMoodleIdId id;
 
     @MapsId("taskCategoryId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -27,8 +25,8 @@ public class TaskMoodleid extends BaseEntity<TaskMoodleidId> {
     @Column(name = "moodle_id")
     private Long moodleId;
 
-    public TaskMoodleid(Task task, TaskCategory taskCategory, long questionId) {
-        this.id = new TaskMoodleidId();
+    public TaskMoodleId(Task task, TaskCategory taskCategory, long questionId) {
+        this.id = new TaskMoodleIdId();
         this.id.setTaskId(task.getId());
         this.id.setTaskCategoryId(taskCategory.getId());
         this.task = task;
@@ -36,17 +34,15 @@ public class TaskMoodleid extends BaseEntity<TaskMoodleidId> {
         this.moodleId = questionId;
     }
 
-    public TaskMoodleid() {
-        this.id = new TaskMoodleidId();
+    public TaskMoodleId() {
+        this.id = new TaskMoodleIdId();
     }
 
-
-    public TaskMoodleidId getId() {
+    public TaskMoodleIdId getId() {
         return id;
     }
 
-
-    public void setId(TaskMoodleidId id) {
+    public void setId(TaskMoodleIdId id) {
         this.id = id;
     }
 
