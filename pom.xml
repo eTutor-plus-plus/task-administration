@@ -12,7 +12,7 @@
 
     <groupId>at.jku.dke.etutor</groupId>
     <artifactId>task-administration</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.5</version>
 
     <name>eTutor: Task Administration</name>
     <description>Task Administration Server for eTutor</description>

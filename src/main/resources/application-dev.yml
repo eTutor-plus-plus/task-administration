@@ -29,7 +29,7 @@ jwt:
 # Moodle
 moodle:
   enabled: true
-  token: 97ce0215d3b4c7b5869e0b0d65ca05c8
+  token: b27a8b79eedf23228c490c0c277c97e5
   url: http://localhost:8000/
 
 # Cors Configuration

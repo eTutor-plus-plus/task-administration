@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
  * @param status               The status of the task.
  * @param taskGroupId          The ID of the task group.
  * @param taskCategoryIds      The IDs of the task categories.
+ * @param moodleSynced         The boolean if the task is synced to Moodle.
  * @param createdBy            The creation user.
  * @param createdDate          The creation date.
  * @param lastModifiedBy       The modification user.
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
  */
 public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @NotNull String title, @NotNull String descriptionDe, @NotNull String descriptionEn,
                       @NotNull Short difficulty, @NotNull BigDecimal maxPoints, @NotNull String taskType, @NotNull TaskStatus status, Long taskGroupId, Set<Long> taskCategoryIds,
+                      boolean moodleSynced,
                       String createdBy, Instant createdDate, String lastModifiedBy, Instant lastModifiedDate, String approvedBy,
                       OffsetDateTime approvedDate) implements Serializable {
     /**
@@ -55,6 +57,7 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getStatus(),
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             null, // prevent lazy loading of not required categories
+            task.getIsMoodleSynced(),
             task.getCreatedBy(),
             task.getCreatedDate(),
             task.getLastModifiedBy(),
@@ -81,6 +84,7 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getStatus(),
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             taskCategories != null ? taskCategories.stream().map(AuditedEntity::getId).collect(Collectors.toSet()) : null,
+            task.getIsMoodleSynced(),
             task.getCreatedBy(),
             task.getCreatedDate(),
             task.getLastModifiedBy(),

@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -195,5 +196,24 @@ public class TaskController {
     public ResponseEntity<Serializable> submit(@Valid @RequestBody SubmitSubmissionDto submissionDto) {
         var result = this.taskService.submit(submissionDto);
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Forces moodle synchronization for the task.
+     *
+     * @param id The identifier of the task to update.
+     * @return Accepted
+     */
+    @Transactional
+    @PostMapping(value = "/{id}")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "202", description = "Task synchronization initiated"),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "403", description = "Operation not allowed", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "404", description = "Task not found", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+    })
+    public ResponseEntity<Void> syncMoodle(@PathVariable long id) {
+        this.taskService.updateMoodleObjectsForTask(id);
+        return ResponseEntity.accepted().build();
     }
 }

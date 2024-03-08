@@ -49,8 +49,10 @@ public class Task extends AuditedEntity {
     @Column(name = "task_type", nullable = false, length = 100)
     private String taskType;
 
-    @Column(name = "moodle_id")
-    private Integer moodleId;
+
+    @NotNull
+    @Column(name = "moodle_sync", nullable = false)
+    private boolean isMoodleSynced;
 
     @NotNull
     @Column(name = "status", columnDefinition = "task_status not null")
@@ -67,6 +69,7 @@ public class Task extends AuditedEntity {
 
     @Column(name = "approved_date")
     private OffsetDateTime approvedDate;
+
 
     @ManyToMany
     @JoinTable(name = "tasks_task_categories",
@@ -208,24 +211,6 @@ public class Task extends AuditedEntity {
     }
 
     /**
-     * Gets the moodle identifier (course category).
-     *
-     * @return The moodle identifier (course category).
-     */
-    public Integer getMoodleId() {
-        return moodleId;
-    }
-
-    /**
-     * Sets the moodle identifier (course category).
-     *
-     * @param moodleId The moodle identifier (course category).
-     */
-    public void setMoodleId(Integer moodleId) {
-        this.moodleId = moodleId;
-    }
-
-    /**
      * Gets the status.
      *
      * @return The status.
@@ -298,6 +283,19 @@ public class Task extends AuditedEntity {
     }
 
     /**
+     * Gets the moodleSync identifier
+     *
+     * @return boolean whether moodle is synced
+     */
+    public boolean getIsMoodleSynced() {
+        return isMoodleSynced;
+    }
+
+    public void setIsMoodleSynced(boolean isMoodleSynced) {
+        this.isMoodleSynced = isMoodleSynced;
+    }
+
+    /**
      * Gets the task categories.
      *
      * @return The task categories.
@@ -324,4 +322,5 @@ public class Task extends AuditedEntity {
             .add("status=" + status)
             .toString();
     }
+
 }
