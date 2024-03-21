@@ -13,6 +13,9 @@ import java.time.Instant;
  * @param taskType         The supported task type.
  * @param url              The URL of the task app.
  * @param apiKey           The API key of the task app.
+ * @param submissionPrefix The prefix for the submission URL.
+ * @param taskGroupPrefix  The prefix for the task group URL.
+ * @param taskPrefix       The prefix for the task URL.
  * @param createdBy        The creation user.
  * @param createdDate      The creation date.
  * @param lastModifiedBy   The modification user.
@@ -22,6 +25,9 @@ public record TaskAppDto(@NotNull Long id,
                          @NotNull String taskType,
                          @NotNull String url,
                          String apiKey,
+                         String taskPrefix,
+                         String taskGroupPrefix,
+                         String submissionPrefix,
                          String createdBy,
                          Instant createdDate,
                          String lastModifiedBy,
@@ -32,6 +38,8 @@ public record TaskAppDto(@NotNull Long id,
      * @param app The app to copy.
      */
     public TaskAppDto(TaskApp app) {
-        this(app.getId(), app.getTaskType(), app.getUrl(), app.getApiKey(), app.getCreatedBy(), app.getCreatedDate(), app.getLastModifiedBy(), app.getLastModifiedDate());
+        this(app.getId(), app.getTaskType(), app.getUrl(), app.getApiKey(),
+            app.getTaskPrefix(), app.getTaskGroupPrefix(), app.getSubmissionPrefix(),
+            app.getCreatedBy(), app.getCreatedDate(), app.getLastModifiedBy(), app.getLastModifiedDate());
     }
 }

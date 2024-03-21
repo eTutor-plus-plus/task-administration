@@ -9,6 +9,7 @@ server:
 
 # Springdoc
 springdoc:
+  show-actuator: true
   api-docs:
     enabled: false
 

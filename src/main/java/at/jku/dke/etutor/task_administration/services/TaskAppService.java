@@ -89,6 +89,9 @@ public class TaskAppService {
         taskApp.setTaskType(dto.taskType());
         taskApp.setUrl(dto.url());
         taskApp.setApiKey(dto.apiKey());
+        taskApp.setTaskPrefix(dto.taskPrefix());
+        taskApp.setTaskGroupPrefix(dto.taskGroupPrefix());
+        taskApp.setSubmissionPrefix(dto.submissionPrefix());
         taskApp = this.repository.save(taskApp);
 
         return taskApp;
@@ -113,6 +116,9 @@ public class TaskAppService {
         taskApp.setTaskType(dto.taskType());
         taskApp.setUrl(dto.url());
         taskApp.setApiKey(dto.apiKey());
+        taskApp.setTaskPrefix(dto.taskPrefix());
+        taskApp.setTaskGroupPrefix(dto.taskGroupPrefix());
+        taskApp.setSubmissionPrefix(dto.submissionPrefix());
         this.repository.save(taskApp);
     }
 
