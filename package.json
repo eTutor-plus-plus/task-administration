@@ -1,6 +1,6 @@
 {
     "name": "etutor-task-administration",
-    "version": "0.0.5",
+    "version": "1.0.0-beta.0",
     "private": true,
     "scripts": {
         "commit": "cz",
