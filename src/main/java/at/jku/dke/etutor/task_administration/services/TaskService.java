@@ -210,12 +210,14 @@ public class TaskService {
         var task = this.repository.findByIdAndTaskCategories(id).orElseThrow(() -> new EntityNotFoundException("Task " + id + " does not exist."));
         if (concurrencyToken != null && task.getLastModifiedDate() != null && task.getLastModifiedDate().isAfter(concurrencyToken))
             throw new ConcurrencyFailureException("Task has been modified in the meantime");
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(task.getOrganizationalUnit().getId())) throw new EntityNotFoundException();
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(task.getOrganizationalUnit().getId()))
+            throw new EntityNotFoundException();
         if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId()))
             throw new ValidationException("Unknown organizational unit");
         if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
             throw new InsufficientAuthenticationException("User is not allowed to modify the task");
-        if (!task.getTaskType().equals(dto.taskType())) throw new ValidationException("Changing the task type is not supported.");
+        if (!task.getTaskType().equals(dto.taskType()))
+            throw new ValidationException("Changing the task type is not supported.");
 
         LOG.info("Updating task {}", id);
         task.setOrganizationalUnit(this.organizationalUnitRepository.getReferenceById(dto.organizationalUnitId()));
@@ -277,10 +279,11 @@ public class TaskService {
      */
     @Transactional
     public void delete(long id) {
-        var orgUnit = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
         var task = this.repository.findById(id).orElse(null);
-        if (task == null) return;
+        if (task == null)
+            return;
 
+        var orgUnit = SecurityHelpers.getOrganizationalUnits();
         if (SecurityHelpers.isFullAdmin() || orgUnit.contains(task.getOrganizationalUnit().getId())) {
             if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
                 throw new InsufficientAuthenticationException("User is not allowed to delete the task");
@@ -288,7 +291,8 @@ public class TaskService {
             LOG.info("Deleting task {}", id);
             this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());
             this.repository.deleteById(id);
-        }
+        } else
+            throw new InsufficientAuthenticationException("User is not allowed to delete the task");
     }
 
     /**

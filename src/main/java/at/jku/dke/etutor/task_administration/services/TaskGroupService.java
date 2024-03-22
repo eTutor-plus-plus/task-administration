@@ -218,11 +218,11 @@ public class TaskGroupService {
      */
     @Transactional
     public void delete(long id) {
-        var orgUnits = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
         var taskGroup = this.repository.findById(id).orElse(null);
         if (taskGroup == null)
             return;
 
+        var orgUnits = SecurityHelpers.getOrganizationalUnits();
         if (SecurityHelpers.isFullAdmin() || orgUnits.contains(taskGroup.getOrganizationalUnit().getId())) {
             if (taskGroup.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(taskGroup.getOrganizationalUnit().getId()))
                 throw new InsufficientAuthenticationException("User is not allowed to delete the task group");
@@ -230,7 +230,8 @@ public class TaskGroupService {
             LOG.info("Deleting task group {}", id);
             this.taskAppCommunicationService.deleteTaskGroup(taskGroup.getId(), taskGroup.getTaskGroupType());
             this.repository.deleteById(id);
-        }
+        } else
+            throw new InsufficientAuthenticationException("User is not allowed to delete the task group");
     }
 
     //#endregion

@@ -229,7 +229,7 @@ public class TaskCategoryService {
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {
-                var orgUnits = SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor();
+                var orgUnits = SecurityHelpers.getOrganizationalUnits();
                 predicates.add(criteriaBuilder.in(root.get("organizationalUnit").get("id")).value(orgUnits));
             }
 

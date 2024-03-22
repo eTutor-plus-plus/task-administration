@@ -35,7 +35,6 @@ server:
 
 # API docs
 springdoc:
-  #show-actuator: true
   swagger-ui:
     path: /docs
     operations-sorter: alpha
@@ -77,7 +76,7 @@ management:
       show-details: WHEN_AUTHORIZED
       show-components: WHEN_AUTHORIZED
       roles:
-        - FULL_ADMIN
+        - ADMIN
   endpoints:
     web:
       exposure:

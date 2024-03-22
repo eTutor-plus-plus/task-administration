@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Streams;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
@@ -62,7 +63,7 @@ public class TaskAppCommunicationService {
      */
     public Map<String, Object> getTaskGroupAdditionalData(long taskGroupId, String taskGroupType) {
         try {
-            var requestBuilder = this.prepareHttpRequest(taskGroupType, "api/taskGroup/" + taskGroupId);
+            var requestBuilder = this.prepareHttpRequest(taskGroupType, "api/taskGroup@@TASKGROUP@@/" + taskGroupId);
             if (requestBuilder == null)
                 return null;
 
@@ -98,7 +99,7 @@ public class TaskAppCommunicationService {
      */
     public TaskGroupModificationResponseDto createTaskGroup(long id, ModifyTaskGroupDto data) {
         try {
-            var requestBuilder = this.prepareHttpRequest(data.taskGroupType(), "api/taskGroup/" + id);
+            var requestBuilder = this.prepareHttpRequest(data.taskGroupType(), "api/taskGroup@@TASKGROUP@@/" + id);
             if (requestBuilder == null)
                 throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Unknown task group type.");
 
@@ -136,7 +137,7 @@ public class TaskAppCommunicationService {
      */
     public TaskGroupModificationResponseDto updateTaskGroup(long id, ModifyTaskGroupDto data) {
         try {
-            var requestBuilder = this.prepareHttpRequest(data.taskGroupType(), "api/taskGroup/" + id);
+            var requestBuilder = this.prepareHttpRequest(data.taskGroupType(), "api/taskGroup@@TASKGROUP@@/" + id);
             if (requestBuilder == null)
                 return null;
 
@@ -175,7 +176,7 @@ public class TaskAppCommunicationService {
      */
     public void deleteTaskGroup(long id, String taskGroupType) {
         try {
-            var requestBuilder = this.prepareHttpRequest(taskGroupType, "api/taskGroup/" + id);
+            var requestBuilder = this.prepareHttpRequest(taskGroupType, "api/taskGroup@@TASKGROUP@@/" + id);
             if (requestBuilder == null)
                 return;
 
@@ -213,7 +214,7 @@ public class TaskAppCommunicationService {
      */
     public Map<String, Object> getTaskAdditionalData(long taskId, String taskType) {
         try {
-            var requestBuilder = this.prepareHttpRequest(taskType, "api/task/" + taskId);
+            var requestBuilder = this.prepareHttpRequest(taskType, "api/task@@TASK@@/" + taskId);
             if (requestBuilder == null)
                 return null;
 
@@ -249,7 +250,7 @@ public class TaskAppCommunicationService {
      */
     public TaskModificationResponseDto createTask(long id, ModifyTaskDto data) {
         try {
-            var requestBuilder = this.prepareHttpRequest(data.taskType(), "api/task/" + id);
+            var requestBuilder = this.prepareHttpRequest(data.taskType(), "api/task@@TASK@@/" + id);
             if (requestBuilder == null)
                 throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Unknown task type.");
 
@@ -287,7 +288,7 @@ public class TaskAppCommunicationService {
      */
     public TaskModificationResponseDto updateTask(long id, ModifyTaskDto data) {
         try {
-            var requestBuilder = this.prepareHttpRequest(data.taskType(), "api/task/" + id);
+            var requestBuilder = this.prepareHttpRequest(data.taskType(), "api/task@@TASK@@/" + id);
             if (requestBuilder == null)
                 return null;
 
@@ -324,7 +325,7 @@ public class TaskAppCommunicationService {
      */
     public void deleteTask(long id, String taskType) {
         try {
-            var requestBuilder = this.prepareHttpRequest(taskType, "api/task/" + id);
+            var requestBuilder = this.prepareHttpRequest(taskType, "api/task@@TASK@@/" + id);
             if (requestBuilder == null)
                 return;
 
@@ -404,7 +405,8 @@ public class TaskAppCommunicationService {
         // don't forward requests to default endpoints
         if (Pattern.matches("^api/submission(\\?.*)?", path.toLowerCase()) ||
             Pattern.matches("^api/submission/[a-z0-9-]+/result(\\?.*)?", path.toLowerCase()) ||
-            Pattern.matches("^api/(task|taskgroup)/[0-9]+(\\?.*)?", path.toLowerCase()))
+            Pattern.matches("^api/(task|taskgroup)/[0-9]+(\\?.*)?", path.toLowerCase()) ||
+            Pattern.matches("^api/(task|taskgroup)/.+/[0-9]+(\\?.*)?", path.toLowerCase()))
             return null;
 
         return this.prepareHttpRequest(taskType, path, secured);
@@ -469,7 +471,7 @@ public class TaskAppCommunicationService {
      */
     public Serializable submit(String taskType, SubmitSubmissionDto submission) {
         try {
-            var requestBuilder = this.prepareHttpRequest(taskType, "api/submission?persist=false&runInBackground=false");
+            var requestBuilder = this.prepareHttpRequest(taskType, "api/submission@@SUBMISSION@@?persist=false&runInBackground=false");
             if (requestBuilder == null)
                 throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
 
@@ -506,6 +508,16 @@ public class TaskAppCommunicationService {
 
     /**
      * Prepares an HTTP request for the specified task group type.
+     * <p>
+     * Following placeholders may be used in the path:
+     * <ul>
+     *     <li>{@code @@TASK@@}: Prefix for task</li>
+     *     <li>{@code @@TASKGROUP@@}: Prefix for task group</li>
+     *     <li>{@code @@SUBMISSION@@}: Prefix for submission</li>
+     * </ul>
+     * This method will replace the placeholders with the actual values of the task app if configured (and prefixes it with a "/").
+     * E.g. if the path is "api/task@@TASK@@/1", the resulting path will be "api/task/1" if no prefix is configured and
+     * "api/task/dlg/1" if the prefix "dlg" is configured.
      *
      * @param taskGroupType   The task group type.
      * @param path            The path to append to the URL.
@@ -518,6 +530,23 @@ public class TaskAppCommunicationService {
         if (app == null)
             return null;
 
+        // Replace placeholder
+        TriFunction<String, String, String, String> replaceFunc = (p, f, s) -> {
+            if (p.contains(s)) {
+                if (f != null && !f.isBlank())
+                    p = p.replace(s, '/' + f);
+                else
+                    p = p.replace(s, "");
+            }
+            return p;
+        };
+        if (path != null) {
+            path = replaceFunc.apply(path, app.getTaskPrefix(), "@@TASK@@");
+            path = replaceFunc.apply(path, app.getTaskGroupPrefix(), "@@TASKGROUP@@");
+            path = replaceFunc.apply(path, app.getSubmissionPrefix(), "@@SUBMISSION@@");
+        }
+
+        // Normalize URL
         String url = app.getUrl();
         if (path != null) {
             if (!url.endsWith("/"))
@@ -525,6 +554,7 @@ public class TaskAppCommunicationService {
             url += path;
         }
 
+        // Build request
         var builder = HttpRequest.newBuilder();
         if (app.getApiKey() != null && addApiKeyHeader)
             builder = builder.header("X-API-KEY", app.getApiKey());
