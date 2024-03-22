@@ -76,7 +76,7 @@ management:
       show-details: WHEN_AUTHORIZED
       show-components: WHEN_AUTHORIZED
       roles:
-        - FULL_ADMIN
+        - ADMIN
   endpoints:
     web:
       exposure:
