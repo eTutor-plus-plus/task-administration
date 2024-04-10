@@ -96,7 +96,7 @@ class tasks {
    {field} task_type: varchar(100)
    status: task_status
    + //task_group_id//: bigint
-   + moodle_id: integer[]
+   moodle_sync: boolean
    {field} created_by: varchar(255)
    created_date: timestamptz
    {field} last_modified_by: varchar(255)
@@ -117,10 +117,21 @@ class task_apps {
    {field} ~task_type: varchar(100)
    {field} url: varchar(255)
    {field} + api_key: varchar(255)
+   {field} + task_prefix: varchar(50)
+   {field} + task_group_prefix: varchar(50)
+   {field} + submission_prefix: varchar(50)
    {field} created_by: varchar(255)
    created_date: timestamptz
    {field} last_modified_by: varchar(255)
    last_modified_date: timestamptz
+}
+
+class task_moodleids {
+    //task_category_id//: bigint
+    //task_id//: bigint
+    moodle_id: bigint
+   --
+   # (task_category_id, task_id)
 }
 
 users "1" -- "*" user_tokens : has >
@@ -137,4 +148,7 @@ tasks "*" -- "0..1" task_groups : "belongs to" >
 
 tasks_task_categories "*" -- "1" task_categories : has <
 tasks_task_categories "*" -- "1"  tasks : belongs to <
+
+tasks "*" -- "*" task_moodleids
+task_categories "*" -- "*" task_moodleids
 @enduml
