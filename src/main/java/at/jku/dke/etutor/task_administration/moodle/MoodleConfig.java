@@ -27,6 +27,19 @@ public class MoodleConfig {
     }
 
     /**
+     * Creates a new instance of class {@link MoodleConfig}.
+     *
+     * @param token   The moodle authentication token.
+     * @param url     The moodle url.
+     * @param enabled Whether the moodle synchronization is enabled.
+     */
+    public MoodleConfig(String token, String url, boolean enabled) {
+        this.token = token;
+        this.url = url;
+        this.enabled = enabled;
+    }
+
+    /**
      * Gets the moodle authentication token.
      *
      * @return The moodle authentication token.

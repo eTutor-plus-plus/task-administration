@@ -144,6 +144,5 @@ jspm_packages/
 ### CUSTOM ###
 .jpb/
 /logs
-public.pem
-private.pem
+*.pem
 .env

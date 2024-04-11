@@ -110,6 +110,20 @@ class TaskMoodleIdIdTest {
         assertFalse(result);
     }
 
+
+    @Test
+    void equals_equals() {
+        // Arrange
+        var id1 = new TaskMoodleIdId(3L, 4L);
+        var id2 = new TaskMoodleIdId(3L, 4L);
+
+        // Act
+        var result = id1.equals(id2);
+
+        // Assert
+        assertTrue(result);
+    }
+
     @Test
     void hashCode_equals() {
         // Arrange
