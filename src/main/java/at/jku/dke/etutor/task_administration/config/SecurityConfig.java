@@ -49,15 +49,10 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final Environment environment;
-
     /**
      * Creates a new instance of class {@link SecurityConfig}.
-     *
-     * @param environment The environment of the application.
      */
-    public SecurityConfig(Environment environment) {
-        this.environment = environment;
+    public SecurityConfig() {
     }
 
     /**

@@ -228,7 +228,7 @@ public class TaskService {
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
         task.setTaskGroup(dto.taskGroupId() == null ? null : this.taskGroupRepository.getReferenceById(dto.taskGroupId()));
-        task.setIsMoodleSynced(false);
+        task.setMoodleSynced(false);
 
         if (dto.taskCategoryIds() != null) {
             var toRemove = task.getTaskCategories().stream().filter(x -> !dto.taskCategoryIds().contains(x.getId())).toList();
