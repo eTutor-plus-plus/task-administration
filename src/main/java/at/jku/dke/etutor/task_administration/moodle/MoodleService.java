@@ -46,6 +46,8 @@ public abstract class MoodleService {
         this.objectMapper = objectMapper;
 
         var tmp = this.config.getUrl();
+        if (tmp == null)
+            tmp = "";
         if (!tmp.endsWith("/"))
             tmp += "/";
         this.url = tmp + "webservice/rest/server.php";

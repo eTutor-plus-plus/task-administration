@@ -68,6 +68,10 @@ public class AccountService {
             LOG.warn("Someone tried to reset password for disabled user '{}'", username);
             return;
         }
+        if (user.getActivatedDate() == null) {
+            LOG.warn("Someone tried to reset password for not activated user '{}'", username);
+            return;
+        }
 
         // Generate token
         LOG.info("Generating token for user '{}'.", user.getUsername());
