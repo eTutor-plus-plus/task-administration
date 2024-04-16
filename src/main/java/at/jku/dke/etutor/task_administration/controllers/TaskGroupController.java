@@ -109,6 +109,22 @@ public class TaskGroupController {
     }
 
     /**
+     * Export the task groups.
+     *
+     * @return List of task groups
+     */
+    @GetMapping(value = "/export", produces = {MediaType.APPLICATION_JSON_VALUE})
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Task groups"),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "403", description = "Operation not allowed", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+    })
+    public ResponseEntity<List<CombinedDto<TaskGroupDto>>> export() {
+        var result = this.taskGroupService.export();
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * Creates a new task group.
      *
      * @param taskGroupDto The task group data.

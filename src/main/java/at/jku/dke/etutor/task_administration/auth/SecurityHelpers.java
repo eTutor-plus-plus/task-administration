@@ -88,6 +88,16 @@ public final class SecurityHelpers {
     }
 
     /**
+     * Returns whether the current user is a teacher (or higher role) in the specified organizational unit.
+     *
+     * @param orgId The organizational unit id.
+     * @return Whether the user is a teacher or higher role.
+     */
+    public static boolean isInstructorOrHigher(long orgId) {
+        return isFullAdmin() || isAdmin(orgId) || isInstructor(orgId);
+    }
+
+    /**
      * Returns whether the current user is an admin in the specified organizational unit.
      *
      * @param orgId The organizational unit id.

@@ -24,6 +24,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -118,6 +119,29 @@ public class TaskService {
     public List<String> getTaskTypes() {
         LOG.debug("Loading task types for tasks");
         return this.repository.findDistinctTaskTypes();
+    }
+
+    /**
+     * Returns details of all task groups.
+     *
+     * @return List of all task groups with details
+     */
+    @Transactional(readOnly = true)
+    public List<CombinedDto<TaskDto>> export() {
+        LOG.debug("Exporting tasks");
+        var tasks = this.repository.findAll(new FilterSpecification(null, null, null, null, null));
+        List<CombinedDto<TaskDto>> result = new ArrayList<>(tasks.size());
+        for (var task : tasks) {
+            if (SecurityHelpers.isInstructorOrHigher(task.getOrganizationalUnit().getId())) {
+                try {
+                    var details = this.taskAppCommunicationService.getTaskAdditionalData(task.getId(), task.getTaskType());
+                    result.add(new CombinedDto<>(new TaskDto(task), details));
+                } catch (ResponseStatusException ex) {
+                    result.add(new CombinedDto<>(new TaskDto(task), null));
+                }
+            }
+        }
+        return result;
     }
 
     //#endregion
@@ -361,9 +385,9 @@ public class TaskService {
             // User-specified filters
             if (this.name != null) predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), '%' + this.name.toLowerCase() + '%'));
             if (this.status != null) predicates.add(criteriaBuilder.equal(root.get("status"), criteriaBuilder.literal(this.status)));
-            if (taskType != null) predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("taskType")), this.taskType.toLowerCase()));
-            if (orgUnit != null) predicates.add(criteriaBuilder.equal(root.get("organizationalUnit").get("id"), orgUnit));
-            if (taskGroup != null) predicates.add(criteriaBuilder.equal(root.get("taskGroup").get("id"), taskGroup));
+            if (this.taskType != null) predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("taskType")), this.taskType.toLowerCase()));
+            if (this.orgUnit != null) predicates.add(criteriaBuilder.equal(root.get("organizationalUnit").get("id"), this.orgUnit));
+            if (this.taskGroup != null) predicates.add(criteriaBuilder.equal(root.get("taskGroup").get("id"), this.taskGroup));
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {

@@ -114,6 +114,22 @@ public class TaskController {
     }
 
     /**
+     * Export the tasks.
+     *
+     * @return List of tasks
+     */
+    @GetMapping(value = "/export", produces = {MediaType.APPLICATION_JSON_VALUE})
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Tasks"),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+        @ApiResponse(responseCode = "403", description = "Operation not allowed", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+    })
+    public ResponseEntity<List<CombinedDto<TaskDto>>> export() {
+        var result = this.taskService.export();
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * Creates a new task.
      *
      * @param taskDto The task data.
