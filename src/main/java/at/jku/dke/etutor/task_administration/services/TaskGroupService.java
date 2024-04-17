@@ -103,7 +103,7 @@ public class TaskGroupService {
         var groups = this.repository.findAll(new FilterSpecification(null, null, null, null));
         List<CombinedDto<TaskGroupDto>> result = new ArrayList<>(groups.size());
         for (var group : groups) {
-            if (SecurityHelpers.isInstructorOrHigher(group.getOrganizationalUnit().getId())) {
+            if (SecurityHelpers.isFullAdmin() || SecurityHelpers.isAdmin(group.getOrganizationalUnit().getId())) {
                 try {
                     var details = this.taskAppCommunicationService.getTaskGroupAdditionalData(group.getId(), group.getTaskGroupType());
                     result.add(new CombinedDto<>(new TaskGroupDto(group), details));

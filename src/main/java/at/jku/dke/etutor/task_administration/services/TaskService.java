@@ -132,7 +132,7 @@ public class TaskService {
         var tasks = this.repository.findAll(new FilterSpecification(null, null, null, null, null));
         List<CombinedDto<TaskDto>> result = new ArrayList<>(tasks.size());
         for (var task : tasks) {
-            if (SecurityHelpers.isInstructorOrHigher(task.getOrganizationalUnit().getId())) {
+            if (SecurityHelpers.isFullAdmin() || SecurityHelpers.isAdmin(task.getOrganizationalUnit().getId())) {
                 try {
                     var details = this.taskAppCommunicationService.getTaskAdditionalData(task.getId(), task.getTaskType());
                     result.add(new CombinedDto<>(new TaskDto(task), details));
