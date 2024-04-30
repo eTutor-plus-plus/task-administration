@@ -23,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -89,6 +90,29 @@ public class TaskGroupService {
         } else {
             return Optional.empty();
         }
+    }
+
+    /**
+     * Returns details of all task groups.
+     *
+     * @return List of all task groups with details
+     */
+    @Transactional(readOnly = true)
+    public List<CombinedDto<TaskGroupDto>> export() {
+        LOG.debug("Exporting task groups");
+        var groups = this.repository.findAll(new FilterSpecification(null, null, null, null));
+        List<CombinedDto<TaskGroupDto>> result = new ArrayList<>(groups.size());
+        for (var group : groups) {
+            if (SecurityHelpers.isFullAdmin() || SecurityHelpers.isAdmin(group.getOrganizationalUnit().getId())) {
+                try {
+                    var details = this.taskAppCommunicationService.getTaskGroupAdditionalData(group.getId(), group.getTaskGroupType());
+                    result.add(new CombinedDto<>(new TaskGroupDto(group), details));
+                } catch (ResponseStatusException ex) {
+                    result.add(new CombinedDto<>(new TaskGroupDto(group), null));
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -248,10 +272,10 @@ public class TaskGroupService {
                 predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), '%' + this.name.toLowerCase() + '%'));
             if (this.status != null)
                 predicates.add(criteriaBuilder.equal(root.get("status"), criteriaBuilder.literal(this.status)));
-            if (taskGroupType != null)
+            if (this.taskGroupType != null)
                 predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("taskGroupType")), this.taskGroupType.toLowerCase()));
-            if (orgUnit != null)
-                predicates.add(criteriaBuilder.equal(root.get("organizationalUnit").get("id"), orgUnit));
+            if (this.orgUnit != null)
+                predicates.add(criteriaBuilder.equal(root.get("organizationalUnit").get("id"), this.orgUnit));
 
             // Security related filters
             if (!SecurityHelpers.isFullAdmin()) {

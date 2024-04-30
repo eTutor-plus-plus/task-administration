@@ -70,7 +70,6 @@ public class Task extends AuditedEntity {
     @Column(name = "approved_date")
     private OffsetDateTime approvedDate;
 
-
     @ManyToMany
     @JoinTable(name = "tasks_task_categories",
         joinColumns = @JoinColumn(name = "task_id"),
@@ -283,15 +282,20 @@ public class Task extends AuditedEntity {
     }
 
     /**
-     * Gets the moodleSync identifier
+     * Gets whether the task is synced with moodle.
      *
-     * @return boolean whether moodle is synced
+     * @return {@code true} if the task is synced with moodle; {@code false} otherwise.
      */
-    public boolean getIsMoodleSynced() {
+    public boolean isMoodleSynced() {
         return isMoodleSynced;
     }
 
-    public void setIsMoodleSynced(boolean isMoodleSynced) {
+    /**
+     * Sets whether the task is synced with moodle.
+     *
+     * @param isMoodleSynced {@code true} if the task is synced with moodle; {@code false} otherwise.
+     */
+    public void setMoodleSynced(boolean isMoodleSynced) {
         this.isMoodleSynced = isMoodleSynced;
     }
 

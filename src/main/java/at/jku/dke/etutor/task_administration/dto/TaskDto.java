@@ -57,7 +57,7 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getStatus(),
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             null, // prevent lazy loading of not required categories
-            task.getIsMoodleSynced(),
+            task.isMoodleSynced(),
             task.getCreatedBy(),
             task.getCreatedDate(),
             task.getLastModifiedBy(),
@@ -84,7 +84,7 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getStatus(),
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             taskCategories != null ? taskCategories.stream().map(AuditedEntity::getId).collect(Collectors.toSet()) : null,
-            task.getIsMoodleSynced(),
+            task.isMoodleSynced(),
             task.getCreatedBy(),
             task.getCreatedDate(),
             task.getLastModifiedBy(),

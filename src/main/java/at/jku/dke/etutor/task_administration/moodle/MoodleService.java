@@ -46,6 +46,8 @@ public abstract class MoodleService {
         this.objectMapper = objectMapper;
 
         var tmp = this.config.getUrl();
+        if (tmp == null)
+            tmp = "";
         if (!tmp.endsWith("/"))
             tmp += "/";
         this.url = tmp + "webservice/rest/server.php";
@@ -84,7 +86,7 @@ public abstract class MoodleService {
             .orElse("");
         var uri = new URI(url + "?" + query);
 
-        // Convert body to JSON
+        // Convert body to urlencoded string
         var encoded = body.entrySet().stream()
             .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), Charset.defaultCharset()))
             .reduce((a, b) -> a + "&" + b)
@@ -95,7 +97,7 @@ public abstract class MoodleService {
             .header("Content-Type", "application/x-www-form-urlencoded")
             .POST(HttpRequest.BodyPublishers.ofString(encoded))
             .build();
-        try (HttpClient client = HttpClient.newBuilder().build()) {
+        try (HttpClient client = this.createHttpClient()) {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             String bodyString = response.body();
             if (response.statusCode() != 200) {
@@ -111,6 +113,14 @@ public abstract class MoodleService {
 
             return bodyString;
         }
+    }
 
+    /**
+     * Creates a new HTTP client.
+     *
+     * @return The HTTP client.
+     */
+    protected HttpClient createHttpClient() {
+        return HttpClient.newBuilder().build();
     }
 }

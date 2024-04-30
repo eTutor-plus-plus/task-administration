@@ -54,13 +54,16 @@ public class QuestionService extends MoodleService {
         if (task.getTaskCategories().isEmpty()) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
+        if (task.getOrganizationalUnit().getMoodleId() == null) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
 
         ArrayList<TaskMoodleId> moodleIds = new ArrayList<>();
 
         // Array of all categoryIds in which the task should exist
         Object[] categoryIds = task.getTaskCategories().stream().map(AuditedEntity::getId).toArray();
-        for (int i = 0; i < categoryIds.length; i++) {
-            var category = categoryRepository.findById((long) categoryIds[i]);
+        for (Object categoryId : categoryIds) {
+            var category = categoryRepository.findById((long) categoryId);
             if (category.isEmpty())
                 continue;
 
@@ -113,8 +116,8 @@ public class QuestionService extends MoodleService {
 
         // Creating the questions which are new
         Object[] newToCreateCategoryIds = newToCreateTaskCategories.stream().map(AuditedEntity::getId).toArray();
-        for (int i = 0; i < newToCreateCategoryIds.length; i++) {
-            var category = categoryRepository.findById((long) newToCreateCategoryIds[i]);
+        for (Object newToCreateCategoryId : newToCreateCategoryIds) {
+            var category = categoryRepository.findById((long) newToCreateCategoryId);
             if (category.isEmpty())
                 continue;
 
@@ -132,10 +135,10 @@ public class QuestionService extends MoodleService {
 
         // Changing the title of old (no longer supported categories) questions to DEPRECATED_
         Object[] deprecatedQuestionIds = deprecatedCategories.stream().map(TaskMoodleId::getMoodleId).toArray();
-        for (int i = 0; i < deprecatedQuestionIds.length; i++) {
+        for (Object deprecatedQuestionId : deprecatedQuestionIds) {
             Map<String, String> body_question = new HashMap<>();
             body_question.put("data[course_category_id]", task.getOrganizationalUnit().getMoodleId().toString());
-            body_question.put("data[question_id]", deprecatedQuestionIds[i].toString());
+            body_question.put("data[question_id]", deprecatedQuestionId.toString());
             body_question.put("data[title_extension]", "DEPRECATED_");
 
             try {
@@ -150,9 +153,9 @@ public class QuestionService extends MoodleService {
 
         // Updates existing questions by creating a new question and updating the Version in the questionbank
         Object[] updateCategoryIds = updateTaskCategories.stream().map(x -> x.getTaskCategory().getId()).toArray();
-        for (int i = 0; i < updateCategoryIds.length; i++) {
-            var oldMoodle = taskMoodleIdRepository.findById_TaskIdAndId_TaskCategoryId(task.getId(), (long) updateCategoryIds[i]);
-            var newCategory = categoryRepository.findById((long) updateCategoryIds[i]);
+        for (Object updateCategoryId : updateCategoryIds) {
+            var oldMoodle = taskMoodleIdRepository.findById_TaskIdAndId_TaskCategoryId(task.getId(), (long) updateCategoryId);
+            var newCategory = categoryRepository.findById((long) updateCategoryId);
             if (oldMoodle.isEmpty() || newCategory.isEmpty())
                 continue;
 
@@ -198,7 +201,7 @@ public class QuestionService extends MoodleService {
         body_question.put("data[course_category_id]", task.getOrganizationalUnit().getMoodleId().toString());
         body_question.put("data[points]", task.getMaxPoints().toString());
         body_question.put("data[coderunnertype]", "etutor-" + task.getTaskType());
-        body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":3}");
+        body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":2}");
         return body_question;
     }
 
