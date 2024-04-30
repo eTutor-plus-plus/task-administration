@@ -21,7 +21,7 @@ concurrency:
 
 env:
   REGISTRY: ${{ secrets.DOCKER_NAMESPACE }} # ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: task-administration # ${{ github.repository }}
 
 jobs:
   build-ui:
