@@ -300,12 +300,14 @@ public class TaskAppCommunicationService {
                 .build();
             try (HttpClient client = HttpClient.newBuilder().build()) {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() != 200) {
-                    LOG.error("Request for updating task failed with status code {} and body {}.", response.statusCode(), response.body());
-                    throwExceptionIfBodyContainsMessage(response, "Request for updating task failed");
-                    throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task failed.");
-                }
-                return this.objectMapper.readValue(response.body(), TaskModificationResponseDto.class);
+                if (response.statusCode() == 200)
+                    return this.objectMapper.readValue(response.body(), TaskModificationResponseDto.class);
+                if (response.statusCode() == 204)
+                    return null;
+
+                LOG.error("Request for updating task failed with status code {} and body {}.", response.statusCode(), response.body());
+                throwExceptionIfBodyContainsMessage(response, "Request for updating task failed");
+                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task failed.");
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to update existing task.", ex);
