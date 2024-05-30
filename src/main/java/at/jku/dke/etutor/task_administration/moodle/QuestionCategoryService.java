@@ -53,13 +53,14 @@ public class QuestionCategoryService extends MoodleService {
 
         // Load data
         OrganizationalUnit ou = this.ouRepository.findById(category.getOrganizationalUnit().getId()).orElseThrow();
-        TaskCategory parent = null;
-        if (category.getParent() != null)
-            parent = this.categoryRepository.findById(category.getParent().getId()).orElseThrow();
         if (ou.getMoodleId() == null) {
             LOG.warn("Failed to create question category for task category {} because its organizational unit has no moodle-id.", category.getId());
             return CompletableFuture.completedFuture(Optional.empty());
         }
+
+        TaskCategory parent = null;
+        if (category.getParent() != null)
+            parent = this.categoryRepository.findById(category.getParent().getId()).orElseThrow();
         if (parent != null && parent.getMoodleId() == null) {
             LOG.warn("Failed to create question category for task category {} because its parent has no moodle-id.", category.getId());
             return CompletableFuture.completedFuture(Optional.empty());
@@ -70,7 +71,7 @@ public class QuestionCategoryService extends MoodleService {
         body.put("data[course_category_id]", ou.getMoodleId().toString());
         if (parent != null)
             body.put("data[parent_question_category_id]", parent.getMoodleId().toString());
-        body.put("data[id]", category.getId().toString());
+        body.put("data[id]", "TC_" + category.getId().toString());
         body.put("data[name]", category.getName());
 
         // Send request
@@ -100,15 +101,16 @@ public class QuestionCategoryService extends MoodleService {
 
         // Load data
         OrganizationalUnit ou = this.ouRepository.findById(category.getOrganizationalUnit().getId()).orElseThrow();
+        if (ou.getMoodleId() == null) {
+            LOG.warn("Failed to update question category for task category {} because its organizational unit has no moodle-id.", category.getId());
+            return;
+        }
+
         TaskCategory parent = null;
         if (category.getParent() != null)
             parent = this.categoryRepository.findById(category.getParent().getId()).orElseThrow();
         if (parent != null && parent.getMoodleId() == null) {
             LOG.warn("Failed to update question category for task category {} because its parent has no moodle-id.", category.getId());
-            return;
-        }
-        if (ou.getMoodleId() == null) {
-            LOG.warn("Failed to update question category for task category {} because its organizational unit has no moodle-id.", category.getId());
             return;
         }
 
