@@ -49,7 +49,6 @@ public class Task extends AuditedEntity {
     @Column(name = "task_type", nullable = false, length = 100)
     private String taskType;
 
-
     @NotNull
     @Column(name = "moodle_sync", nullable = false)
     private boolean isMoodleSynced;

@@ -12,7 +12,6 @@ import java.util.Optional;
  */
 public interface TaskMoodleIdRepository extends JpaRepository<TaskMoodleId, TaskMoodleIdId> {
 
-
     Optional<TaskMoodleId> findById_TaskIdAndId_TaskCategoryId(Long taskId, Long taskCategoryId);
 
     List<TaskMoodleId> findById_TaskId(Long taskId);
