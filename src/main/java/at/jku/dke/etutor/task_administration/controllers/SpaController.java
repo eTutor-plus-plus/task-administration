@@ -51,7 +51,17 @@ public class SpaController {
      * @return Forward
      */
     @RequestMapping({"/app/{path:[^\\.]*}"})
-    public String redirectSpaNotFoundFile(@SuppressWarnings("unused") @PathVariable String path) {
+    public String redirectSpaNotFoundFileLevel1(@SuppressWarnings("unused") @PathVariable String path) {
+        return "forward:/app/index.html";
+    }
+
+    /**
+     * Forwards all requests not containing a dot to the index view.
+     *
+     * @return Forward
+     */
+    @RequestMapping("/app/*/{path:[^\\.]*}")
+    public String redirectSpaNotFoundFileLevel2(@SuppressWarnings("unused") @PathVariable String path) {
         return "forward:/app/index.html";
     }
 }
