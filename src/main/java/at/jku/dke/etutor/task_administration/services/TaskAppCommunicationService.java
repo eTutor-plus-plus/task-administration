@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -77,14 +78,17 @@ public class TaskAppCommunicationService {
                 } else {
                     LOG.error("Request for additional data failed with status code {}.", response.statusCode());
                     throwExceptionIfBodyContainsMessage(response, "Request for additional data failed");
-                    throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for additional data failed.");
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Request for additional data failed.");
                 }
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to request additional data.", ex);
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Request for additional data failed.", ex);
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for additional data failed.", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Request for additional data failed.", ex);
         }
         return null;
     }
@@ -101,7 +105,7 @@ public class TaskAppCommunicationService {
         try {
             var requestBuilder = this.prepareHttpRequest(data.taskGroupType(), "api/taskGroup@@TASKGROUP@@/" + id);
             if (requestBuilder == null)
-                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Unknown task group type.");
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unknown task group type.");
 
             LOG.info("Creating task group {} of type {}.", id, data.taskGroupType());
             String json = this.objectMapper.writeValueAsString(data);
@@ -114,15 +118,18 @@ public class TaskAppCommunicationService {
                 if (response.statusCode() != 201) {
                     LOG.error("Request for creating task group failed with status code {} and body {}.", response.statusCode(), response.body());
                     throwExceptionIfBodyContainsMessage(response, "Request for creating task group failed");
-                    throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task group failed.");
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Request for creating task group failed.");
                 }
                 return this.objectMapper.readValue(response.body(), TaskGroupModificationResponseDto.class);
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to create new task group.", ex);
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Request for for creating task group failed.", ex);
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task group failed.", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Request for creating task group failed.", ex);
         }
         return null;
     }
@@ -156,13 +163,16 @@ public class TaskAppCommunicationService {
 
                 LOG.error("Request for updating task group failed with status code {} and body {}.", response.statusCode(), response.body());
                 throwExceptionIfBodyContainsMessage(response, "Request for updating task group failed");
-                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task group failed.");
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Request for updating task group failed.");
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to update existing task group.", ex);
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Request for for updating task group failed.", ex);
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task group failed.", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Request for updating task group failed.", ex);
         }
         return null;
     }
@@ -189,14 +199,17 @@ public class TaskAppCommunicationService {
                 if (response.statusCode() != 204) {
                     LOG.error("Request for deleting task group failed with status code {} and body {}.", response.statusCode(), response.body());
                     throwExceptionIfBodyContainsMessage(response, "Request for deleting task group failed");
-                    throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for deleting task group failed.");
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Request for deleting task group failed.");
                 }
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to delete existing task group.", ex);
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Request for for deleting task group failed.", ex);
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for deleting task group failed.", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Request for deleting task group failed.", ex);
         }
     }
 
@@ -228,14 +241,17 @@ public class TaskAppCommunicationService {
                 } else {
                     LOG.error("Request for additional data failed with status code {}.", response.statusCode());
                     throwExceptionIfBodyContainsMessage(response, "Request for additional data failed");
-                    throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for additional data failed.");
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Request for additional data failed.");
                 }
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to request additional data.", ex);
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Request for additional data failed.", ex);
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for additional data failed.", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Request for additional data failed.", ex);
         }
         return null;
     }
@@ -252,7 +268,7 @@ public class TaskAppCommunicationService {
         try {
             var requestBuilder = this.prepareHttpRequest(data.taskType(), "api/task@@TASK@@/" + id);
             if (requestBuilder == null)
-                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Unknown task type.");
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unknown task type.");
 
             LOG.info("Creating task {} of type {}.", id, data.taskType());
             String json = this.objectMapper.writeValueAsString(data);
@@ -265,15 +281,18 @@ public class TaskAppCommunicationService {
                 if (response.statusCode() != 201) {
                     LOG.error("Request for creating task failed with status code {} and body {}.", response.statusCode(), response.body());
                     throwExceptionIfBodyContainsMessage(response, "Request for creating task failed");
-                    throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task failed.");
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Request for creating task failed.");
                 }
                 return this.objectMapper.readValue(response.body(), TaskModificationResponseDto.class);
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to create new task.", ex);
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Request for for creating task failed.", ex);
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for creating task failed.", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Request for creating task failed.", ex);
         }
         return null;
     }
@@ -307,13 +326,16 @@ public class TaskAppCommunicationService {
 
                 LOG.error("Request for updating task failed with status code {} and body {}.", response.statusCode(), response.body());
                 throwExceptionIfBodyContainsMessage(response, "Request for updating task failed");
-                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task failed.");
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Request for updating task failed.");
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to update existing task.", ex);
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Request for for updating task failed.", ex);
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for updating task failed.", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Request for updating task failed.", ex);
         }
         return null;
     }
@@ -340,14 +362,17 @@ public class TaskAppCommunicationService {
                 if (response.statusCode() != 204) {
                     LOG.error("Request for deleting task failed with status code {} and body {}.", response.statusCode(), response.body());
                     throwExceptionIfBodyContainsMessage(response, "Request for deleting task failed");
-                    throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for deleting task failed.");
+                    throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Request for deleting task failed.");
                 }
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to delete existing task.", ex);
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Request for for deleting task failed.", ex);
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for deleting task failed.", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Request for deleting task failed.", ex);
         }
     }
 
@@ -389,6 +414,9 @@ public class TaskAppCommunicationService {
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to forward request.", ex);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Could not forward request.", ex);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
@@ -489,9 +517,12 @@ public class TaskAppCommunicationService {
             }
         } catch (URISyntaxException ex) {
             LOG.error("Could not build URL to submit task.", ex);
+        } catch (ConnectException ex) {
+            LOG.error("Could not connect to task app.", ex);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
         } catch (IOException | InterruptedException ex) {
             LOG.error("Request for for deleting task failed.", ex);
-            throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, "Request for submitting task failed.", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Request for submitting task failed.", ex);
         }
         throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
     }
@@ -589,9 +620,9 @@ public class TaskAppCommunicationService {
             Map<String, Object> body = this.objectMapper.readValue(response.body(), new TypeReference<>() {
             });
             if (body.containsKey("message"))
-                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, messagePrefix + ": " + body.get("message"));
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, messagePrefix + ": " + body.get("message"));
             if (body.containsKey("detail"))
-                throw new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, messagePrefix + ": " + body.get("detail"));
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, messagePrefix + ": " + body.get("detail"));
         } catch (JsonProcessingException ignored) {
         }
     }
