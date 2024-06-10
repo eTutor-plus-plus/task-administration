@@ -42,7 +42,7 @@ public class CourseCategoryService extends MoodleService {
         LOG.info("Creating course category for organizational unit {}.", organizationalUnit.getId());
         Map<String, String> body = new HashMap<>();
         body.put("categories[0][name]", organizationalUnit.getName());
-        body.put("categories[0][idnumber]", organizationalUnit.getId().toString());
+        body.put("categories[0][idnumber]", "OU_" + organizationalUnit.getId().toString());
         body.put("categories[0][description]", "Course Category for eTutor Organizational Unit: " + organizationalUnit.getName());
         body.put("categories[0][descriptionformat]", "2");
 
@@ -75,7 +75,7 @@ public class CourseCategoryService extends MoodleService {
         Map<String, String> body = new HashMap<>();
         body.put("categories[0][id]", organizationalUnit.getMoodleId().toString());
         body.put("categories[0][name]", organizationalUnit.getName());
-        body.put("categories[0][idnumber]", organizationalUnit.getId().toString());
+        body.put("categories[0][idnumber]", "OU_" + organizationalUnit.getId().toString());
         body.put("categories[0][description]", "Course Category for eTutor Organizational Unit: " + organizationalUnit.getName());
         body.put("categories[0][descriptionformat]", "2");
 

@@ -47,17 +47,14 @@ public class QuestionService extends MoodleService {
      */
     @Async
     public CompletableFuture<Optional<List<TaskMoodleId>>> createQuestionFromTask(Task task) {
-        LOG.info("starting moodle Task sync");
-        if (this.config.isDisabled()) {
-            return CompletableFuture.completedFuture(Optional.empty());
-        }
-        if (task.getTaskCategories().isEmpty()) {
-            return CompletableFuture.completedFuture(Optional.empty());
-        }
-        if (task.getOrganizationalUnit().getMoodleId() == null) {
+        if (this.config.isDisabled() ||
+            task.getStatus() != TaskStatus.APPROVED ||
+            task.getTaskCategories().isEmpty() ||
+            task.getOrganizationalUnit().getMoodleId() == null) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
+        LOG.info("starting moodle Task sync");
         ArrayList<TaskMoodleId> moodleIds = new ArrayList<>();
 
         // Array of all categoryIds in which the task should exist
@@ -90,7 +87,7 @@ public class QuestionService extends MoodleService {
     // @Async does not work
     public CompletableFuture<Optional<List<TaskMoodleId>>> updateQuestionFromTask(Task task) {
         LOG.info("Starting Moodle Task sync");
-        if (this.config.isDisabled()) {
+        if (this.config.isDisabled() || task.getStatus() != TaskStatus.APPROVED) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
 

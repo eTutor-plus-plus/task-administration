@@ -2,6 +2,7 @@ package at.jku.dke.etutor.task_administration.services;
 
 import at.jku.dke.etutor.task_administration.auth.SecurityHelpers;
 import at.jku.dke.etutor.task_administration.data.entities.Task;
+import at.jku.dke.etutor.task_administration.data.entities.TaskGroup;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
 import at.jku.dke.etutor.task_administration.data.repositories.*;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
@@ -161,6 +162,7 @@ public class TaskService {
 
         LOG.info("Creating task {}", dto.title());
         var task = new Task();
+        TaskGroup tg = null;
         task.setOrganizationalUnit(this.organizationalUnitRepository.getReferenceById(dto.organizationalUnitId()));
         task.setTitle(dto.title());
         task.setDescriptionDe(dto.descriptionDe());
@@ -168,7 +170,10 @@ public class TaskService {
         task.setDifficulty(dto.difficulty());
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
-        if (dto.taskGroupId() != null) task.setTaskGroup(this.taskGroupRepository.getReferenceById(dto.taskGroupId()));
+        if (dto.taskGroupId() != null) {
+            tg = this.taskGroupRepository.findById(dto.taskGroupId()).orElse(null);
+            task.setTaskGroup(tg);
+        }
 
         if (dto.taskCategoryIds() != null) {
             for (Long id : dto.taskCategoryIds()) {
@@ -176,9 +181,13 @@ public class TaskService {
             }
         }
 
-        if (SecurityHelpers.isTutor(dto.organizationalUnitId())) task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
+        if (SecurityHelpers.isTutor(dto.organizationalUnitId()))
+            task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
         else {
-            task.setStatus(dto.status());
+            if (tg != null && tg.getStatus() != TaskStatus.APPROVED && dto.status() == TaskStatus.APPROVED)
+                task.setStatus(TaskStatus.READY_FOR_APPROVAL);
+            else
+                task.setStatus(dto.status());
             if (dto.status().equals(TaskStatus.APPROVED)) {
                 task.setApprovedBy(SecurityHelpers.getUserName());
                 task.setApprovedDate(OffsetDateTime.now());
@@ -187,6 +196,7 @@ public class TaskService {
                 task.setApprovedDate(null);
             }
         }
+        task.setMoodleSynced(task.getTaskCategories().isEmpty() || task.getStatus() != TaskStatus.APPROVED);
 
         task = this.repository.save(task);
         var result = this.taskAppCommunicationService.createTask(task.getId(), dto);
@@ -208,8 +218,8 @@ public class TaskService {
                 task.setMaxPoints(result.maxPoints());
                 modified = true;
             }
-            if (modified) this.repository.save(task);
-
+            if (modified)
+                this.repository.save(task);
 
             // only syncing to moodle if the task is approved
             if (task.getStatus() == TaskStatus.APPROVED) {
@@ -219,7 +229,6 @@ public class TaskService {
 
         return task;
     }
-
 
     /**
      * Updates an existing task.
@@ -244,6 +253,7 @@ public class TaskService {
             throw new ValidationException("Changing the task type is not supported.");
 
         LOG.info("Updating task {}", id);
+        TaskGroup tg = null;
         task.setOrganizationalUnit(this.organizationalUnitRepository.getReferenceById(dto.organizationalUnitId()));
         task.setTitle(dto.title());
         task.setDescriptionDe(dto.descriptionDe());
@@ -251,8 +261,10 @@ public class TaskService {
         task.setDifficulty(dto.difficulty());
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
-        task.setTaskGroup(dto.taskGroupId() == null ? null : this.taskGroupRepository.getReferenceById(dto.taskGroupId()));
-        task.setMoodleSynced(false);
+        if (dto.taskGroupId() != null) {
+            tg = this.taskGroupRepository.findById(dto.taskGroupId()).orElse(null);
+            task.setTaskGroup(tg);
+        }
 
         if (dto.taskCategoryIds() != null) {
             var toRemove = task.getTaskCategories().stream().filter(x -> !dto.taskCategoryIds().contains(x.getId())).toList();
@@ -263,10 +275,15 @@ public class TaskService {
             task.getTaskCategories().clear();
         }
 
-        if (SecurityHelpers.isTutor(dto.organizationalUnitId())) task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
+        if (SecurityHelpers.isTutor(dto.organizationalUnitId()))
+            task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
         else {
             if (!task.getStatus().equals(dto.status())) {
-                task.setStatus(dto.status());
+                if (tg != null && tg.getStatus() != TaskStatus.APPROVED && dto.status() == TaskStatus.APPROVED)
+                    task.setStatus(TaskStatus.READY_FOR_APPROVAL);
+                else
+                    task.setStatus(dto.status());
+
                 if (dto.status().equals(TaskStatus.APPROVED)) {
                     task.setApprovedBy(SecurityHelpers.getUserName());
                     task.setApprovedDate(OffsetDateTime.now());
@@ -276,6 +293,7 @@ public class TaskService {
                 }
             }
         }
+        task.setMoodleSynced(task.getTaskCategories().isEmpty() || task.getStatus() != TaskStatus.APPROVED);
 
         var result = this.taskAppCommunicationService.updateTask(task.getId(), dto);
         if (result != null) {
@@ -291,6 +309,7 @@ public class TaskService {
 
         this.repository.save(task);
 
+        // only syncing to moodle if the task is approved
         if (task.getStatus() == TaskStatus.APPROVED) {
             this.updateMoodleObjectsForTask(task.getId());
         }
@@ -330,7 +349,7 @@ public class TaskService {
             return;
 
         this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
-            moodleIds.ifPresent(this.taskMoodleIdRepository::saveAll);
+            moodleIds.ifPresent(this.taskMoodleIdRepository::saveAll); // moodleSync flag of task is updated in databases by trigger
         }).exceptionally(e -> {
             LOG.error("Error while creating Moodle objects for task " + task.getId(), e);
             return null;
@@ -351,7 +370,7 @@ public class TaskService {
                 this.taskMoodleIdRepository.deleteByTaskId(task.getId());
                 LOG.debug("All MoodleIds from Task {} got deleted", task.getId());
                 this.taskMoodleIdRepository.saveAll(moodleIds.get());
-            }
+            }  // moodleSync flag of task is updated in databases by trigger
         }).exceptionally(e -> {
             LOG.error("Error while updating Moodle objects for task " + id, e);
             return null;
