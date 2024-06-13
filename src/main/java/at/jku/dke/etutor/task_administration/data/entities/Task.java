@@ -53,6 +53,9 @@ public class Task extends AuditedEntity {
     @Column(name = "moodle_sync", nullable = false)
     private boolean isMoodleSynced;
 
+    @Column(name = "exam_task", nullable = false)
+    private boolean examTask;
+
     @NotNull
     @Column(name = "status", columnDefinition = "task_status not null")
     private TaskStatus status;
@@ -296,6 +299,24 @@ public class Task extends AuditedEntity {
      */
     public void setMoodleSynced(boolean isMoodleSynced) {
         this.isMoodleSynced = isMoodleSynced;
+    }
+
+    /**
+     * Gets whether the task is an exam task (influences moodle synchronization).
+     *
+     * @return {@code true} if the task is an exam task; {@code false} otherwise.
+     */
+    public boolean isExamTask() {
+        return examTask;
+    }
+
+    /**
+     * Sets whether the task is an exam task (influences moodle synchronization).
+     *
+     * @param examTask {@code true} if the task is an exam task; {@code false} otherwise.
+     */
+    public void setExamTask(boolean examTask) {
+        this.examTask = examTask;
     }
 
     /**

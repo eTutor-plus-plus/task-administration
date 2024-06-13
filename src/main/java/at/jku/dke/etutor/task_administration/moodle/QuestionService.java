@@ -199,6 +199,7 @@ public class QuestionService extends MoodleService {
         body_question.put("data[points]", task.getMaxPoints().toString());
         body_question.put("data[coderunnertype]", "etutor-" + task.getTaskType());
         body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":2}");
+        body_question.put("data[examTask]", task.isExamTask() + "");
         return body_question;
     }
 

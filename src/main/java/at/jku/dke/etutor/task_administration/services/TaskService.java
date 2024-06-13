@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -104,7 +105,12 @@ public class TaskService {
         LOG.debug("Loading task {}", id);
         var dto = this.repository.findOne(new SingleSpecification(id)).map(task -> new TaskDto(task, task.getTaskCategories()));
         if (dto.isPresent()) {
-            var additionalData = this.taskAppCommunicationService.getTaskAdditionalData(dto.get().id(), dto.get().taskType());
+            Map<String, Object> additionalData;
+            if (dto.get().examTask() && SecurityHelpers.isTutor(dto.get().organizationalUnitId()))
+                additionalData = Map.of();
+            else
+                additionalData = this.taskAppCommunicationService.getTaskAdditionalData(dto.get().id(), dto.get().taskType());
+
             return Optional.of(new CombinedDto<>(dto.get(), additionalData));
         } else {
             return Optional.empty();
@@ -170,6 +176,7 @@ public class TaskService {
         task.setDifficulty(dto.difficulty());
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
+        task.setExamTask(dto.examTask());
         if (dto.taskGroupId() != null) {
             tg = this.taskGroupRepository.findById(dto.taskGroupId()).orElse(null);
             task.setTaskGroup(tg);
@@ -181,9 +188,10 @@ public class TaskService {
             }
         }
 
-        if (SecurityHelpers.isTutor(dto.organizationalUnitId()))
+        if (SecurityHelpers.isTutor(dto.organizationalUnitId())) {
             task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
-        else {
+            task.setExamTask(false);
+        } else {
             if (tg != null && tg.getStatus() != TaskStatus.APPROVED && dto.status() == TaskStatus.APPROVED)
                 task.setStatus(TaskStatus.READY_FOR_APPROVAL);
             else
@@ -249,6 +257,8 @@ public class TaskService {
             throw new ValidationException("Unknown organizational unit");
         if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
             throw new InsufficientAuthenticationException("User is not allowed to modify the task");
+        if (task.isExamTask() && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
+            throw new InsufficientAuthenticationException("User is not allowed to modify the task");
         if (!task.getTaskType().equals(dto.taskType()))
             throw new ValidationException("Changing the task type is not supported.");
 
@@ -261,6 +271,7 @@ public class TaskService {
         task.setDifficulty(dto.difficulty());
         task.setMaxPoints(dto.maxPoints());
         task.setTaskType(dto.taskType());
+        task.setExamTask(dto.examTask());
         if (dto.taskGroupId() != null) {
             tg = this.taskGroupRepository.findById(dto.taskGroupId()).orElse(null);
             task.setTaskGroup(tg);
@@ -275,9 +286,10 @@ public class TaskService {
             task.getTaskCategories().clear();
         }
 
-        if (SecurityHelpers.isTutor(dto.organizationalUnitId()))
+        if (SecurityHelpers.isTutor(dto.organizationalUnitId())) {
             task.setStatus(dto.status().equals(TaskStatus.APPROVED) ? TaskStatus.DRAFT : dto.status());
-        else {
+            task.setExamTask(false);
+        } else {
             if (!task.getStatus().equals(dto.status())) {
                 if (tg != null && tg.getStatus() != TaskStatus.APPROVED && dto.status() == TaskStatus.APPROVED)
                     task.setStatus(TaskStatus.READY_FOR_APPROVAL);
@@ -328,8 +340,9 @@ public class TaskService {
 
         var orgUnit = SecurityHelpers.getOrganizationalUnits();
         if (SecurityHelpers.isFullAdmin() || orgUnit.contains(task.getOrganizationalUnit().getId())) {
-            if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
+            if ((task.getStatus().equals(TaskStatus.APPROVED) || task.isExamTask()) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId())) {
                 throw new InsufficientAuthenticationException("User is not allowed to delete the task");
+            }
 
             LOG.info("Deleting task {}", id);
             this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());

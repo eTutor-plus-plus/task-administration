@@ -21,6 +21,7 @@ import java.util.Set;
  * @param taskType             The type of the task.
  * @param status               The status of the task.
  * @param taskGroupId          The ID of the task group.
+ * @param examTask             Whether the task is an exam task.
  * @param taskCategoryIds      The IDs of the task categories.
  * @param additionalData       The additional data of the task.
  */
@@ -33,6 +34,7 @@ public record ModifyTaskDto(@NotNull Long organizationalUnitId,
                             @NotEmpty @Size(max = 100) String taskType,
                             @NotNull TaskStatus status,
                             Long taskGroupId,
+                            @NotNull boolean examTask,
                             Set<@NotNull Long> taskCategoryIds,
                             @Valid Map<String, Object> additionalData) implements Serializable {
 }

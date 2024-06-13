@@ -4,7 +4,7 @@ import at.jku.dke.etutor.task_administration.data.entities.AuditedEntity;
 import at.jku.dke.etutor.task_administration.data.entities.Task;
 import at.jku.dke.etutor.task_administration.data.entities.TaskCategory;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
  * @param taskGroupId          The ID of the task group.
  * @param taskCategoryIds      The IDs of the task categories.
  * @param moodleSynced         The boolean if the task is synced to Moodle.
+ * @param examTask             Whether the task is an exam task.
  * @param createdBy            The creation user.
  * @param createdDate          The creation date.
  * @param lastModifiedBy       The modification user.
@@ -37,7 +38,7 @@ import java.util.stream.Collectors;
  */
 public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @NotNull String title, @NotNull String descriptionDe, @NotNull String descriptionEn,
                       @NotNull Short difficulty, @NotNull BigDecimal maxPoints, @NotNull String taskType, @NotNull TaskStatus status, Long taskGroupId, Set<Long> taskCategoryIds,
-                      boolean moodleSynced,
+                      boolean moodleSynced, boolean examTask,
                       String createdBy, Instant createdDate, String lastModifiedBy, Instant lastModifiedDate, String approvedBy,
                       OffsetDateTime approvedDate) implements Serializable {
     /**
@@ -58,6 +59,7 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             null, // prevent lazy loading of not required categories
             task.isMoodleSynced(),
+            task.isExamTask(),
             task.getCreatedBy(),
             task.getCreatedDate(),
             task.getLastModifiedBy(),
@@ -85,6 +87,7 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             taskCategories != null ? taskCategories.stream().map(AuditedEntity::getId).collect(Collectors.toSet()) : null,
             task.isMoodleSynced(),
+            task.isExamTask(),
             task.getCreatedBy(),
             task.getCreatedDate(),
             task.getLastModifiedBy(),
