@@ -33,7 +33,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -91,7 +90,13 @@ public class TaskService {
     @Transactional(readOnly = true)
     public Page<TaskDto> getTasks(Pageable page, String nameFilter, TaskStatus statusFilter, String taskTypeFilter, Long orgUnitFilter, Long taskGroupFilter) {
         LOG.debug("Loading tasks for page {}", page);
-        return this.repository.findAll(new FilterSpecification(nameFilter, statusFilter, taskTypeFilter, orgUnitFilter, taskGroupFilter), page).map(TaskDto::new);
+        return this.repository
+            .findAll(new FilterSpecification(nameFilter, statusFilter, taskTypeFilter, orgUnitFilter, taskGroupFilter), page)
+            .map(task -> {
+                if (task.isExamTask() && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
+                    return null;
+                return new TaskDto(task);
+            });
     }
 
     /**
@@ -105,12 +110,10 @@ public class TaskService {
         LOG.debug("Loading task {}", id);
         var dto = this.repository.findOne(new SingleSpecification(id)).map(task -> new TaskDto(task, task.getTaskCategories()));
         if (dto.isPresent()) {
-            Map<String, Object> additionalData;
             if (dto.get().examTask() && SecurityHelpers.isTutor(dto.get().organizationalUnitId()))
-                additionalData = Map.of();
-            else
-                additionalData = this.taskAppCommunicationService.getTaskAdditionalData(dto.get().id(), dto.get().taskType());
+                throw new EntityNotFoundException();
 
+            var additionalData = this.taskAppCommunicationService.getTaskAdditionalData(dto.get().id(), dto.get().taskType());
             return Optional.of(new CombinedDto<>(dto.get(), additionalData));
         } else {
             return Optional.empty();
