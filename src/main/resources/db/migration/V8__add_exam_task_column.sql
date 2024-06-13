@@ -1,0 +1,2 @@
+ALTER TABLE tasks
+    ADD exam_task BOOLEAN NOT NULL DEFAULT FALSE;

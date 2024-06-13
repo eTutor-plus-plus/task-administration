@@ -6,6 +6,8 @@
 .idea/**/shelf
 .idea/jpa.xml
 .idea/jpa-buddy.xml
+.idea/jpb-settings.xml
+.idea/diff-generator.xml
 .idea/misc.xml
 .idea/vcs.xml
 .idea/**/contentModel.xml
