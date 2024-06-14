@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
  * This class provides methods for managing {@link User}s.
  */
 @Service
-@PreAuthorize(AuthConstants.AUTHORITY_ADMIN_OR_ABOVE)
 public class UserService {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
@@ -90,6 +89,7 @@ public class UserService {
      * @return List of users
      */
     @Transactional(readOnly = true)
+    @PreAuthorize(AuthConstants.AUTHORITY_ADMIN_OR_ABOVE)
     public Page<UserDto> getUsers(Pageable page, String usernameFilter, String firstNameFilter, String lastNameFilter, String emailFilter, Boolean enabledFilter, Boolean fullAdminFilter) {
         LOG.debug("Loading users for page {}", page);
         return this.repository.findAll(new FilterSpecification(usernameFilter, firstNameFilter, lastNameFilter, emailFilter, enabledFilter, fullAdminFilter), page).map(UserDto::new);
@@ -102,6 +102,7 @@ public class UserService {
      * @return The user or an empty result if the user does not exist.
      */
     @Transactional(readOnly = true)
+    @PreAuthorize(AuthConstants.AUTHORITY_ADMIN_OR_ABOVE)
     public Optional<UserDto> getUser(long id) {
         LOG.debug("Loading user {}", id);
         var orgUnit = SecurityHelpers.getOrganizationalUnitsAsAdmin();
@@ -121,6 +122,7 @@ public class UserService {
      * @return The created user.
      */
     @Transactional
+    @PreAuthorize(AuthConstants.AUTHORITY_ADMIN_OR_ABOVE)
     public User create(ModifyUserDto dto) {
         LOG.info("Creating user {}", dto.username());
 
@@ -176,6 +178,7 @@ public class UserService {
      * @throws ConcurrencyFailureException If the concurrency check failed.
      */
     @Transactional
+    @PreAuthorize(AuthConstants.AUTHORITY_ADMIN_OR_ABOVE)
     public void update(long id, ModifyUserDto dto, Instant concurrencyToken) {
         var user = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("User " + id + " does not exist."));
         if (concurrencyToken != null && user.getLastModifiedDate() != null && user.getLastModifiedDate().isAfter(concurrencyToken))
@@ -251,6 +254,7 @@ public class UserService {
      * @param id The identifier of the user to delete.
      */
     @Transactional
+    @PreAuthorize(AuthConstants.AUTHORITY_ADMIN_OR_ABOVE)
     public void deleteUser(long id) {
         var userId = SecurityHelpers.getUserId();
         if (userId.isEmpty() || userId.get() == id)
