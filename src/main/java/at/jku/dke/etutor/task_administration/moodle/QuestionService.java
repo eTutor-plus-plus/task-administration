@@ -193,7 +193,10 @@ public class QuestionService extends MoodleService {
         Map<String, String> body_question = new HashMap<>();
         body_question.put("data[category_id]", String.valueOf(category.getMoodleId()));
         body_question.put("data[id]", task.getId().toString());
-        body_question.put("data[name]", task.getTitle());
+        if (taskGroup == null)
+            body_question.put("data[name]", task.getTitle());
+        else
+            body_question.put("data[name]", taskGroup.getName() + " - " + task.getTitle());
         body_question.put("data[questiontext]", builder.toString());
         body_question.put("data[course_category_id]", task.getOrganizationalUnit().getMoodleId().toString());
         body_question.put("data[points]", task.getMaxPoints().toString());

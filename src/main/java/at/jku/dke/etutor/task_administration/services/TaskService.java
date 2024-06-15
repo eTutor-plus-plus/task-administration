@@ -418,7 +418,7 @@ public class TaskService {
             var predicates = new ArrayList<Predicate>();
 
             // User-specified filters
-            if (this.name != null) predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), '%' + this.name.toLowerCase() + '%'));
+            if (this.name != null) predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), '%' + this.name.toLowerCase() + '%'));
             if (this.status != null) predicates.add(criteriaBuilder.equal(root.get("status"), criteriaBuilder.literal(this.status)));
             if (this.taskType != null) predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(root.get("taskType")), this.taskType.toLowerCase()));
             if (this.orgUnit != null) predicates.add(criteriaBuilder.equal(root.get("organizationalUnit").get("id"), this.orgUnit));
