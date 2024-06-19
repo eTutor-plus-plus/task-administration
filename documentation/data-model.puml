@@ -97,6 +97,7 @@ class tasks {
    status: task_status
    + //task_group_id//: bigint
    moodle_sync: boolean
+   exam_task: boolean
    {field} created_by: varchar(255)
    created_date: timestamptz
    {field} last_modified_by: varchar(255)
