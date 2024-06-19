@@ -85,7 +85,10 @@ public class TaskAdministrationApplication {
             .ofNullable(env.getProperty("server.servlet.context-path"))
             .filter(x -> !x.isBlank())
             .orElse("/");
-        return String.format("%s://127.0.0.1:%s%s", protocol, serverPort, contextPath);
+        String result = String.format("%s://127.0.0.1:%s%s", protocol, serverPort, contextPath);
+        if (!result.endsWith("/"))
+            result = result + "/";
+        return result;
     }
 
     /**
