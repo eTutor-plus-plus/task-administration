@@ -15,8 +15,10 @@ COPY --from=builder /app/dependencies/ ./
 COPY --from=builder /app/spring-boot-loader/ ./
 COPY --from=builder /app/snapshot-dependencies/ ./
 COPY --from=builder /app/application/ ./
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 
 # Spring
 ENV SPRING_PROFILES_ACTIVE=prod
 
-ENTRYPOINT ["java", "-Xmx6g", "org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT ["/app/entrypoint.sh"]
