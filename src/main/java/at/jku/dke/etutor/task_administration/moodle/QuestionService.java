@@ -54,7 +54,7 @@ public class QuestionService extends MoodleService {
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
-        LOG.info("starting moodle Task sync");
+        LOG.info("Creating moodle questions for task {}", task.getId());
         ArrayList<TaskMoodleId> moodleIds = new ArrayList<>();
 
         // Array of all categoryIds in which the task should exist
@@ -66,12 +66,13 @@ public class QuestionService extends MoodleService {
 
             Map<String, String> body_question = this.buildTaskParameterMap(task, category.get());
             try {
+                LOG.debug("Creating moodle questions for task {} and category {}", task.getId(), categoryId);
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_create_question"), body_question);
                 Question result = objectMapper.readValue(responseBody, Question.class);
                 moodleIds.add(new TaskMoodleId(task, category.get(), result.questionid));
-                LOG.info("Created question with qid {}", result.questionid);
+                LOG.info("Created question with ID {} for task {}", result.questionid, task.getId());
             } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
-                LOG.error("Failed to create Question {}.", task.getId(), ex);
+                LOG.error("Failed to create Question for task {} and category {}", task.getId(), categoryId, ex);
                 return CompletableFuture.completedFuture(Optional.empty());
             }
         }
@@ -120,12 +121,13 @@ public class QuestionService extends MoodleService {
 
             Map<String, String> body_question = this.buildTaskParameterMap(task, category.get());
             try {
+                LOG.debug("Creating moodle question for task {} and category {}", task.getId(), category.get().getId());
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_create_question"), body_question);
                 Question result = objectMapper.readValue(responseBody, Question.class);
                 moodleIds.add(new TaskMoodleId(task, category.get(), result.questionid));
-                LOG.info("Created question with qid {}", result.questionid);
+                LOG.info("Created question with ID {} for task {} and category {}", result.questionid, task.getId(), category.get().getId());
             } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
-                LOG.error("Failed to create Question {}.", task.getId(), ex);
+                LOG.error("Failed to create Question for task {} and category {}", task.getId(), category.get().getId(), ex);
                 return CompletableFuture.completedFuture(Optional.empty());
             }
         }
@@ -139,11 +141,12 @@ public class QuestionService extends MoodleService {
             body_question.put("data[title_extension]", "DEPRECATED_");
 
             try {
+                LOG.debug("Deprecating moodle question {} for task {}", deprecatedQuestionId, task.getId());
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_deprecate_old_question"), body_question);
                 Question result = objectMapper.readValue(responseBody, Question.class);
-                LOG.info("Deprecated question with qid {}", result.questionid);
+                LOG.info("Deprecated question with ID {}", result.questionid);
             } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
-                LOG.error("Failed to deprecate old Question {}.", task.getId(), ex);
+                LOG.error("Failed to deprecate old questions for task {}", task.getId(), ex);
                 return CompletableFuture.completedFuture(Optional.empty());
             }
         }
@@ -160,12 +163,13 @@ public class QuestionService extends MoodleService {
             body_question.put("data[oldMoodleId]", String.valueOf(oldMoodle.get().getMoodleId()));
 
             try {
+                LOG.debug("Updating moodle question for task {} and category {}", task.getId(), updateCategoryId);
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_update_question"), body_question);
                 Question result = objectMapper.readValue(responseBody, Question.class);
                 moodleIds.add(new TaskMoodleId(task, newCategory.get(), result.questionid));
-                LOG.info("Created question with qid {}", result.questionid);
+                LOG.info("Created question with ID {} for task {} and category {}", result.questionid, task.getId(), updateCategoryId);
             } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
-                LOG.error("Failed to create Question {}.", task.getId(), ex);
+                LOG.error("Failed to create Question for task {} and category {}", task.getId(), updateCategoryId, ex);
                 return CompletableFuture.completedFuture(Optional.empty());
             }
         }

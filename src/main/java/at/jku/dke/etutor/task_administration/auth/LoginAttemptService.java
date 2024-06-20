@@ -5,6 +5,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -16,22 +18,26 @@ import java.util.concurrent.TimeUnit;
  */
 @Service
 public class LoginAttemptService {
+    private static final Logger LOG = LoggerFactory.getLogger(LoginAttemptService.class);
+
     /**
-     * The maximum amount of login attempts before login.
+     * The maximum amount of login attempts of the same IP before lockout.
      */
     public static final int IP_MAX_ATTEMPTS = 10;
 
     /**
-     * The constant USER_MAX_ATTEMPTS.
+     * The maximum amount of login attempts of the same username before lockout.
      */
     public static final int USER_MAX_ATTEMPTS = 5;
 
-    private static final LoadingCache<String, Integer> attemptsCache = CacheBuilder.newBuilder().expireAfterWrite(4, TimeUnit.HOURS).build(new CacheLoader<>() {
-        @Override
-        public Integer load(String key) {
-            return 0;
-        }
-    });
+    private static final LoadingCache<String, Integer> attemptsCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(4, TimeUnit.HOURS)
+        .build(new CacheLoader<>() {
+            @Override
+            public Integer load(String key) {
+                return 0;
+            }
+        });
 
     private final UserRepository userRepository;
     private final HttpServletRequest request;
@@ -60,12 +66,15 @@ public class LoginAttemptService {
      * @param username The username that tried to log in.
      */
     public void loginFailed(String username) {
+        LOG.warn("Login of user {} failed", username);
+
         // Set user login count
         var user = this.userRepository.findByUsernameIgnoreCase(username).orElse(null);
         if (user != null) {
             user.setFailedLoginCount(user.getFailedLoginCount() + 1);
             if (user.getFailedLoginCount() > USER_MAX_ATTEMPTS)
                 user.setLockoutEnd(OffsetDateTime.now().plusMinutes(30));
+            LOG.debug("Set failed login count to {} and lockout end to {} for user {}", user.getFailedLoginCount(), user.getLockoutEnd(), username);
 
             this.userRepository.save(user);
         }
@@ -77,10 +86,12 @@ public class LoginAttemptService {
             try {
                 attempts = attemptsCache.get(ip);
             } catch (ExecutionException ex) {
+                LOG.warn("Could not load login attempts cache for IP {}", ip, ex);
                 attempts = 0;
             }
             attempts++;
             attemptsCache.put(ip, attempts);
+            LOG.debug("Set fail login count for IP {} to {}", ip, attempts);
         }
     }
 
@@ -91,16 +102,20 @@ public class LoginAttemptService {
      * @param username The username that tried to log in.
      */
     public void loginSucceeded(String username) {
+        LOG.info("Login of user {} succeeded", username);
+
         // Set user login count
         var user = this.userRepository.findByUsernameIgnoreCase(username).orElse(null);
         if (user != null) {
             user.setFailedLoginCount(0);
             user.setLockoutEnd(null);
+            LOG.debug("Reset failed login count and lockout end for user {}", username);
             this.userRepository.save(user);
         }
 
         // Set IP login count
         synchronized (attemptsCache) {
+            LOG.debug("Invalidating login attempts cache for IP {}", this.getClientIP());
             attemptsCache.invalidate(this.getClientIP());
         }
     }
@@ -115,7 +130,8 @@ public class LoginAttemptService {
             synchronized (attemptsCache) {
                 return attemptsCache.get(this.getClientIP()) > IP_MAX_ATTEMPTS;
             }
-        } catch (ExecutionException e) {
+        } catch (ExecutionException ex) {
+            LOG.warn("Failed to retrieve amount of failed login attempts cache for IP {}", this.getClientIP(), ex);
             return false;
         }
     }
@@ -130,7 +146,8 @@ public class LoginAttemptService {
             synchronized (attemptsCache) {
                 return attemptsCache.get(this.getClientIP());
             }
-        } catch (ExecutionException e) {
+        } catch (ExecutionException ex) {
+            LOG.warn("Failed to retrieve amount of failed login attempts cache for IP {}", this.getClientIP(), ex);
             return 0;
         }
     }

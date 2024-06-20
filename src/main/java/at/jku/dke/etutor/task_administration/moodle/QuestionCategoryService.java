@@ -78,6 +78,7 @@ public class QuestionCategoryService extends MoodleService {
         try {
             String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_create_question_category"), body);
             QuestionCategory result = objectMapper.readValue(responseBody, QuestionCategory.class);
+            LOG.debug("Received {} for created task category {}", result, category.getId());
             return CompletableFuture.completedFuture(Optional.of(result.id()));
         } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
             LOG.error("Failed to create question category for task category {}.", category.getId(), ex);
@@ -124,7 +125,8 @@ public class QuestionCategoryService extends MoodleService {
 
         // Send request
         try {
-            this.post(getDefaultQueryParameters("local_etutorsync_update_question_category"), body);
+            var result = this.post(getDefaultQueryParameters("local_etutorsync_update_question_category"), body);
+            LOG.debug("Received {} for updated task category {}", result, category.getId());
         } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
             LOG.error("Failed to update question category for task category {}.", category.getId(), ex);
         }

@@ -142,7 +142,7 @@ public class AuthController {
         @ApiResponse(responseCode = "400", description = "Invalid data", content = @Content(schema = @Schema(implementation = ProblemDetail.class), mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
     })
     public void requestResetToken(@NotEmpty @RequestParam String username, @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, defaultValue = "en") String language) {
-        this.accountService.requestResetPasswordToken(username, Locale.of(language)); // TODO: add request throttling
+        this.accountService.requestResetPasswordToken(username, Locale.of(language));
     }
 
     /**

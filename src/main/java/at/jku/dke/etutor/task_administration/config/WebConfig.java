@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.web.context.request.RequestContextListener;
+import org.springframework.web.filter.CommonsRequestLoggingFilter;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -85,6 +86,19 @@ public class WebConfig implements WebMvcConfigurer {
     @Bean
     public RequestContextListener requestContextListener() {
         return new RequestContextListener();
+    }
+
+    /**
+     * Provides the request logging filter.
+     *
+     * @return The logging filter.
+     */
+    @Bean
+    public CommonsRequestLoggingFilter requestLoggingFilter() {
+        var filter = new CommonsRequestLoggingFilter();
+        filter.setIncludeQueryString(true);
+        filter.setIncludeClientInfo(true);
+        return filter;
     }
 
     private static class CustomHttpExchangeRepository extends InMemoryHttpExchangeRepository {

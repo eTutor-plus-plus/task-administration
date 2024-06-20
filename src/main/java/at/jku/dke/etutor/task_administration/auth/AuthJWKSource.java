@@ -63,8 +63,10 @@ public class AuthJWKSource {
     public String getKeyId() {
         if (this.keyId == null && Files.exists(this.publicKeyPath)) {
             try {
+                LOG.debug("Loading last modification time of public key file {}", this.publicKeyPath);
                 this.keyId = Files.readAttributes(this.publicKeyPath, BasicFileAttributes.class).lastModifiedTime().toMillis() + "";
-            } catch (IOException e) {
+            } catch (IOException ex) {
+                LOG.error("Could not load key last modification time of public key", ex);
                 this.keyId = "0";
             }
         }
@@ -117,7 +119,10 @@ public class AuthJWKSource {
 
         // save
         Files.writeString(this.publicKeyPath, Base64.getEncoder().encodeToString(pair.getPublic().getEncoded()));
+        LOG.info("Public key {} created", this.publicKeyPath);
+
         Files.writeString(this.privateKeyPath, Base64.getEncoder().encodeToString(pair.getPrivate().getEncoded()));
+        LOG.info("Private key {} created", this.privateKeyPath);
     }
 
     private void loadKeys() throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
@@ -129,6 +134,7 @@ public class AuthJWKSource {
 
         // if keys are too old, generate new ones
         if (Files.getLastModifiedTime(this.privateKeyPath).toInstant().isBefore(Instant.now().minus(30, ChronoUnit.DAYS))) {
+            LOG.info("Generating new keys as keys are older than 30 days");
             this.generateKeys();
             return;
         }
@@ -137,12 +143,14 @@ public class AuthJWKSource {
         var keyFactory = KeyFactory.getInstance("RSA");
 
         // public
+        LOG.debug("Loading public key from {}", this.publicKeyPath);
         var publicKeyString = Files.readString(this.publicKeyPath);
         var pkb = Base64.getDecoder().decode(publicKeyString);
         EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(pkb);
         this.publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
 
         // private
+        LOG.debug("Loading private key from {}", this.publicKeyPath);
         var privateKeyString = Files.readString(this.privateKeyPath);
         var decodedKey = Base64.getDecoder().decode(privateKeyString);
         EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(decodedKey);
