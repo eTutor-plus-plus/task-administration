@@ -95,8 +95,10 @@ public class TaskCategoryService {
     @Transactional
     @PreAuthorize(AuthConstants.AUTHORITY_INSTRUCTOR_OR_ABOVE)
     public TaskCategory create(ModifyTaskCategoryDto dto) {
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor().contains(dto.organizationalUnitId()))
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor().contains(dto.organizationalUnitId())) {
+            LOG.warn("User {} tried to create a task category for organizational unit {}.", SecurityHelpers.getUserId(), dto.organizationalUnitId());
             throw new ValidationException("Unknown organizational unit");
+        }
 
         var taskCategory = new TaskCategory();
         if (dto.parentId() != null) {
@@ -127,12 +129,18 @@ public class TaskCategoryService {
     @PreAuthorize(AuthConstants.AUTHORITY_INSTRUCTOR_OR_ABOVE)
     public void update(long id, ModifyTaskCategoryDto dto, Instant concurrencyToken) {
         var taskCategory = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Task category " + id + " does not exist."));
-        if (concurrencyToken != null && taskCategory.getLastModifiedDate() != null && taskCategory.getLastModifiedDate().isAfter(concurrencyToken))
-            throw new ConcurrencyFailureException("Task category has been modified in the meantime");
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor().contains(taskCategory.getOrganizationalUnit().getId()))
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor().contains(taskCategory.getOrganizationalUnit().getId())) {
+            LOG.warn("User {} tried to update task category {}", SecurityHelpers.getUserId(), id);
             throw new EntityNotFoundException();
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor().contains(dto.organizationalUnitId()))
+        }
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnitsAsAdminOrInstructor().contains(dto.organizationalUnitId())) {
+            LOG.warn("User {} tried to move task category {} to organizational unit {}", SecurityHelpers.getUserId(), id, dto.organizationalUnitId());
             throw new ValidationException("Unknown organizational unit");
+        }
+        if (concurrencyToken != null && taskCategory.getLastModifiedDate() != null && taskCategory.getLastModifiedDate().isAfter(concurrencyToken)) {
+            LOG.debug("A user tried to update task category with ID {} but the concurrency token expired", id);
+            throw new ConcurrencyFailureException("Task category has been modified in the meantime");
+        }
 
         if (dto.parentId() != null) {
             var parent = this.repository.findById(dto.parentId()).orElse(null);
@@ -165,7 +173,8 @@ public class TaskCategoryService {
         if (SecurityHelpers.isFullAdmin() || orgUnits.contains(taskCategory.getOrganizationalUnit().getId())) {
             LOG.info("Deleting task category {}", id);
             this.repository.delete(taskCategory);
-        }
+        } else
+            LOG.warn("User {} tried to delete task category {}", SecurityHelpers.getUserId(), id);
     }
 
     //#endregion
@@ -181,8 +190,10 @@ public class TaskCategoryService {
         if (category.getMoodleId() != null)
             return;
 
+        LOG.debug("Triggering question category creation for task category {}", category.getId());
         this.questionCategoryService.createQuestionCategory(category).thenAccept(moodleId -> {
             if (moodleId.isPresent()) {
+                LOG.info("Setting moodle-id for task category {} to {}", category.getId(), moodleId.get());
                 category.setMoodleId(moodleId.get());
                 this.repository.save(category);
             }
@@ -195,6 +206,7 @@ public class TaskCategoryService {
      * @param category The task category.
      */
     public void updateMoodleObjectsForOrganizationalUnit(TaskCategory category) {
+        LOG.debug("Triggering question category update for task category {}", category.getId());
         this.questionCategoryService.updateQuestionCategory(category);
     }
 

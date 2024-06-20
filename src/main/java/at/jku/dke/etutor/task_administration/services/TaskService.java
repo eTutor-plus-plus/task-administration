@@ -3,6 +3,7 @@ package at.jku.dke.etutor.task_administration.services;
 import at.jku.dke.etutor.task_administration.auth.SecurityHelpers;
 import at.jku.dke.etutor.task_administration.data.entities.Task;
 import at.jku.dke.etutor.task_administration.data.entities.TaskGroup;
+import at.jku.dke.etutor.task_administration.data.entities.TaskMoodleId;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
 import at.jku.dke.etutor.task_administration.data.repositories.*;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * This class provides methods for managing {@link Task}s.
@@ -166,8 +168,10 @@ public class TaskService {
      */
     @Transactional
     public Task create(ModifyTaskDto dto) {
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId()))
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId())) {
+            LOG.warn("User {} tried to create a task for organizational unit {}.", SecurityHelpers.getUserId(), dto.organizationalUnitId());
             throw new ValidationException("Unknown organizational unit");
+        }
 
         LOG.info("Creating task {}", dto.title());
         var task = new Task();
@@ -214,18 +218,22 @@ public class TaskService {
         if (result != null) {
             boolean modified = false;
             if (result.descriptionDe() != null && (task.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionDe()))) {
+                LOG.debug("Setting german description for task {} with value received from task app", task.getId());
                 task.setDescriptionDe(result.descriptionDe());
                 modified = true;
             }
             if (result.descriptionEn() != null && (task.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionEn()))) {
+                LOG.debug("Setting english description for task {} with value received from task app", task.getId());
                 task.setDescriptionEn(result.descriptionEn());
                 modified = true;
             }
             if (result.difficulty() != null && result.difficulty() >= 1 && result.difficulty() <= 4) {
+                LOG.debug("Setting difficulty for task {} with value received from task app", task.getId());
                 task.setDifficulty(result.difficulty());
                 modified = true;
             }
             if (result.maxPoints() != null && result.maxPoints().compareTo(BigDecimal.ZERO) > 0) {
+                LOG.debug("Setting maximum points for task {} with value received from task app", task.getId());
                 task.setMaxPoints(result.maxPoints());
                 modified = true;
             }
@@ -252,18 +260,28 @@ public class TaskService {
     @Transactional
     public void update(long id, ModifyTaskDto dto, Instant concurrencyToken) {
         var task = this.repository.findByIdAndTaskCategories(id).orElseThrow(() -> new EntityNotFoundException("Task " + id + " does not exist."));
-        if (concurrencyToken != null && task.getLastModifiedDate() != null && task.getLastModifiedDate().isAfter(concurrencyToken))
-            throw new ConcurrencyFailureException("Task has been modified in the meantime");
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(task.getOrganizationalUnit().getId()))
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(task.getOrganizationalUnit().getId())) {
+            LOG.warn("User {} tried to update task {}", SecurityHelpers.getUserId(), id);
             throw new EntityNotFoundException();
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId()))
+        }
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId())) {
+            LOG.warn("User {} tried to move task {} to organizational unit {}", SecurityHelpers.getUserId(), id, dto.organizationalUnitId());
             throw new ValidationException("Unknown organizational unit");
-        if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
+        }
+        if (task.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId())) {
+            LOG.warn("User {} tried to update approved task {}", SecurityHelpers.getUserId(), id);
             throw new InsufficientAuthenticationException("User is not allowed to modify the task");
-        if (task.isExamTask() && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId()))
+        }
+        if (task.isExamTask() && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId())) {
+            LOG.warn("User {} tried to update exam task {}", SecurityHelpers.getUserId(), id);
             throw new InsufficientAuthenticationException("User is not allowed to modify the task");
+        }
         if (!task.getTaskType().equals(dto.taskType()))
             throw new ValidationException("Changing the task type is not supported.");
+        if (concurrencyToken != null && task.getLastModifiedDate() != null && task.getLastModifiedDate().isAfter(concurrencyToken)) {
+            LOG.debug("A user tried to update task with ID {} but the concurrency token expired", id);
+            throw new ConcurrencyFailureException("Task has been modified in the meantime");
+        }
 
         LOG.info("Updating task {}", id);
         TaskGroup tg = null;
@@ -312,14 +330,22 @@ public class TaskService {
 
         var result = this.taskAppCommunicationService.updateTask(task.getId(), dto);
         if (result != null) {
-            if (result.descriptionDe() != null && (task.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionDe())))
+            if (result.descriptionDe() != null && (task.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionDe()))) {
+                LOG.debug("Setting german description for task {} with value received from task app", task.getId());
                 task.setDescriptionDe(result.descriptionDe());
-            if (result.descriptionEn() != null && (task.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionEn())))
+            }
+            if (result.descriptionEn() != null && (task.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", task.getDescriptionEn()))) {
+                LOG.debug("Setting english description for task {} with value received from task app", task.getId());
                 task.setDescriptionEn(result.descriptionEn());
-            if (result.difficulty() != null && result.difficulty() >= 1 && result.difficulty() <= 4)
+            }
+            if (result.difficulty() != null && result.difficulty() >= 1 && result.difficulty() <= 4) {
+                LOG.debug("Setting difficulty for task {} with value received from task app", task.getId());
                 task.setDifficulty(result.difficulty());
-            if (result.maxPoints() != null && result.maxPoints().compareTo(BigDecimal.ZERO) > 0)
+            }
+            if (result.maxPoints() != null && result.maxPoints().compareTo(BigDecimal.ZERO) > 0) {
+                LOG.debug("Setting maximum points for task {} with value received from task app", task.getId());
                 task.setMaxPoints(result.maxPoints());
+            }
         }
 
         this.repository.save(task);
@@ -344,14 +370,17 @@ public class TaskService {
         var orgUnit = SecurityHelpers.getOrganizationalUnits();
         if (SecurityHelpers.isFullAdmin() || orgUnit.contains(task.getOrganizationalUnit().getId())) {
             if ((task.getStatus().equals(TaskStatus.APPROVED) || task.isExamTask()) && SecurityHelpers.isTutor(task.getOrganizationalUnit().getId())) {
+                LOG.warn("User {} tried to delete approved task {}", SecurityHelpers.getUserId(), id);
                 throw new InsufficientAuthenticationException("User is not allowed to delete the task");
             }
 
             LOG.info("Deleting task {}", id);
             this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());
             this.repository.deleteById(id);
-        } else
+        } else {
+            LOG.warn("User {} tried to delete task {}", SecurityHelpers.getUserId(), id);
             throw new InsufficientAuthenticationException("User is not allowed to delete the task");
+        }
     }
 
     /**
@@ -364,10 +393,14 @@ public class TaskService {
         if (!taskMoodleIdRepository.findById_TaskId(task.getId()).isEmpty())
             return;
 
+        LOG.debug("Triggering question creation for task {}", task.getId());
         this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
-            moodleIds.ifPresent(this.taskMoodleIdRepository::saveAll); // moodleSync flag of task is updated in databases by trigger
-        }).exceptionally(e -> {
-            LOG.error("Error while creating Moodle objects for task " + task.getId(), e);
+            if (moodleIds.isPresent()) {
+                LOG.info("Setting moodle-ids for task {} to {}", task.getId(), moodleIds.get().stream().map(TaskMoodleId::getMoodleId).map(x -> x + "").collect(Collectors.joining(",")));
+                this.taskMoodleIdRepository.saveAll(moodleIds.get()); // moodleSync flag of task is updated in databases by trigger
+            }
+        }).exceptionally(ex -> {
+            LOG.error("Error while creating Moodle objects for task {}", task.getId(), ex);
             return null;
         });
     }
@@ -381,14 +414,17 @@ public class TaskService {
     @Transactional
     public void updateMoodleObjectsForTask(long id) {
         var task = this.repository.findByIdAndOrganizationalUnit(id).orElseThrow(() -> new EntityNotFoundException("Task " + id + " does not exist."));
+        LOG.debug("Triggering question update for task {}", task.getId());
         this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
             if (moodleIds.isPresent()) {
+                LOG.debug("Deleting all moodle ids for task {}", task.getId());
                 this.taskMoodleIdRepository.deleteByTaskId(task.getId());
-                LOG.debug("All MoodleIds from Task {} got deleted", task.getId());
+
+                LOG.info("Setting moodle-ids for task {} to {}", task.getId(), moodleIds.get().stream().map(TaskMoodleId::getMoodleId).map(x -> x + "").collect(Collectors.joining(",")));
                 this.taskMoodleIdRepository.saveAll(moodleIds.get());
             }  // moodleSync flag of task is updated in databases by trigger
-        }).exceptionally(e -> {
-            LOG.error("Error while updating Moodle objects for task " + id, e);
+        }).exceptionally(ex -> {
+            LOG.error("Error while updating Moodle objects for task {}", id, ex);
             return null;
         });
     }

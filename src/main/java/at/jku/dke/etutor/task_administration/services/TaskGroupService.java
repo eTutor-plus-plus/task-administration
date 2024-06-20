@@ -138,8 +138,10 @@ public class TaskGroupService {
      */
     @Transactional
     public TaskGroup create(ModifyTaskGroupDto dto) {
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId()))
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId())) {
+            LOG.warn("User {} tried to create a task group for organizational unit {}.", SecurityHelpers.getUserId(), dto.organizationalUnitId());
             throw new ValidationException("Unknown organizational unit");
+        }
 
         LOG.info("Creating task group {}", dto.name());
         var taskGroup = new TaskGroup();
@@ -167,10 +169,12 @@ public class TaskGroupService {
         if (result != null) {
             boolean modified = false;
             if (result.descriptionDe() != null && (taskGroup.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionDe()))) {
+                LOG.debug("Setting german description for task group {} with value received from task app", taskGroup.getId());
                 taskGroup.setDescriptionDe(result.descriptionDe());
                 modified = true;
             }
             if (result.descriptionEn() != null && (taskGroup.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionEn()))) {
+                LOG.debug("Setting english description for task group {} with value received from task app", taskGroup.getId());
                 taskGroup.setDescriptionEn(result.descriptionEn());
                 modified = true;
             }
@@ -192,16 +196,24 @@ public class TaskGroupService {
     @Transactional
     public void update(long id, ModifyTaskGroupDto dto, Instant concurrencyToken) {
         var taskGroup = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Task group " + id + " does not exist."));
-        if (concurrencyToken != null && taskGroup.getLastModifiedDate() != null && taskGroup.getLastModifiedDate().isAfter(concurrencyToken))
-            throw new ConcurrencyFailureException("Task group has been modified in the meantime");
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(taskGroup.getOrganizationalUnit().getId()))
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(taskGroup.getOrganizationalUnit().getId())) {
+            LOG.warn("User {} tried to update task group {}", SecurityHelpers.getUserId(), id);
             throw new EntityNotFoundException();
-        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId()))
+        }
+        if (!SecurityHelpers.isFullAdmin() && !SecurityHelpers.getOrganizationalUnits().contains(dto.organizationalUnitId())) {
+            LOG.warn("User {} tried to move task group {} to organizational unit {}", SecurityHelpers.getUserId(), id, dto.organizationalUnitId());
             throw new ValidationException("Unknown organizational unit");
-        if (taskGroup.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(taskGroup.getOrganizationalUnit().getId()))
+        }
+        if (taskGroup.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(taskGroup.getOrganizationalUnit().getId())) {
+            LOG.warn("User {} tried to update approved task-group {}", SecurityHelpers.getUserId(), id);
             throw new InsufficientAuthenticationException("User is not allowed to modify the task group");
+        }
         if (!taskGroup.getTaskGroupType().equals(dto.taskGroupType()))
             throw new ValidationException("Changing the task group type is not supported.");
+        if (concurrencyToken != null && taskGroup.getLastModifiedDate() != null && taskGroup.getLastModifiedDate().isAfter(concurrencyToken)) {
+            LOG.debug("A user tried to update task group with ID {} but the concurrency token expired", id);
+            throw new ConcurrencyFailureException("Task group has been modified in the meantime");
+        }
 
         LOG.info("Updating task group {}", id);
         taskGroup.setName(dto.name());
@@ -227,10 +239,14 @@ public class TaskGroupService {
 
         var result = this.taskAppCommunicationService.updateTaskGroup(taskGroup.getId(), dto);
         if (result != null) {
-            if (result.descriptionDe() != null && (taskGroup.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionDe())))
+            if (result.descriptionDe() != null && (taskGroup.getDescriptionDe().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionDe()))) {
+                LOG.debug("Setting german description for task group {} with value received from task app", taskGroup.getId());
                 taskGroup.setDescriptionDe(result.descriptionDe());
-            if (result.descriptionEn() != null && (taskGroup.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionEn())))
+            }
+            if (result.descriptionEn() != null && (taskGroup.getDescriptionEn().trim().isEmpty() || Pattern.matches("<p>[\\s\\r\\n]*</p>", taskGroup.getDescriptionEn()))) {
+                LOG.debug("Setting english description for task group {} with value received from task app", taskGroup.getId());
                 taskGroup.setDescriptionEn(result.descriptionEn());
+            }
         }
         this.repository.save(taskGroup);
     }
@@ -248,14 +264,18 @@ public class TaskGroupService {
 
         var orgUnits = SecurityHelpers.getOrganizationalUnits();
         if (SecurityHelpers.isFullAdmin() || orgUnits.contains(taskGroup.getOrganizationalUnit().getId())) {
-            if (taskGroup.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(taskGroup.getOrganizationalUnit().getId()))
+            if (taskGroup.getStatus().equals(TaskStatus.APPROVED) && SecurityHelpers.isTutor(taskGroup.getOrganizationalUnit().getId())) {
+                LOG.warn("User {} tried to delete approved task-group {}", SecurityHelpers.getUserId(), id);
                 throw new InsufficientAuthenticationException("User is not allowed to delete the task group");
+            }
 
             LOG.info("Deleting task group {}", id);
             this.taskAppCommunicationService.deleteTaskGroup(taskGroup.getId(), taskGroup.getTaskGroupType());
             this.repository.deleteById(id);
-        } else
+        } else {
+            LOG.warn("User {} tried to delete task-group {}", SecurityHelpers.getUserId(), id);
             throw new InsufficientAuthenticationException("User is not allowed to delete the task group");
+        }
     }
 
     //#endregion

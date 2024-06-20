@@ -104,8 +104,10 @@ public class OrganizationalUnitService {
     @PreAuthorize(AuthConstants.AUTHORITY_FULL_ADMIN)
     public void update(long id, ModifyOrganizationalUnitDto dto, Instant concurrencyToken) {
         var organizationalUnit = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Organizational unit " + id + " does not exist."));
-        if (concurrencyToken != null && organizationalUnit.getLastModifiedDate() != null && organizationalUnit.getLastModifiedDate().isAfter(concurrencyToken))
+        if (concurrencyToken != null && organizationalUnit.getLastModifiedDate() != null && organizationalUnit.getLastModifiedDate().isAfter(concurrencyToken)) {
+            LOG.debug("A user tried to update organizational unit with ID {} but the concurrency token expired", id);
             throw new ConcurrencyFailureException("Organizational unit has been modified in the meantime");
+        }
 
         LOG.info("Updating organizational unit {}", id);
         organizationalUnit.setName(dto.name());
@@ -138,8 +140,10 @@ public class OrganizationalUnitService {
         if (organizationalUnit.getMoodleId() != null)
             return;
 
+        LOG.debug("Triggering course category creation for organizational unit {}", organizationalUnit.getId());
         this.courseCategoryService.createCourseCategory(organizationalUnit).thenAccept(moodleId -> {
             if (moodleId.isPresent()) {
+                LOG.info("Setting moodle-id for organizational unit {} to {}", organizationalUnit.getId(), moodleId.get());
                 organizationalUnit.setMoodleId(moodleId.get());
                 this.repository.save(organizationalUnit);
             }
@@ -152,6 +156,7 @@ public class OrganizationalUnitService {
      * @param organizationalUnit The organizational unit.
      */
     public void updateMoodleObjectsForOrganizationalUnit(OrganizationalUnit organizationalUnit) {
+        LOG.debug("Triggering course category update for organizational unit {}", organizationalUnit.getId());
         this.courseCategoryService.updateCourseCategory(organizationalUnit);
     }
 

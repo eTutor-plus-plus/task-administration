@@ -17,6 +17,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -49,7 +50,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
      * @param request The current request.
      * @return The response entity.
      */
-    @ExceptionHandler({BadCredentialsException.class, DisabledException.class, LockedException.class})
+    @ExceptionHandler({BadCredentialsException.class, DisabledException.class, LockedException.class, BadJwtException.class})
     public ResponseEntity<Object> handleBadCredentialsException(AuthenticationException ex, WebRequest request) {
         var status = HttpStatus.BAD_REQUEST;
         var body = this.createProblemDetail(ex, status, ex.getLocalizedMessage(), null, null, request);

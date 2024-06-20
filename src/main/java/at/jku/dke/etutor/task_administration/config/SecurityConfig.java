@@ -10,6 +10,8 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -48,6 +50,7 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+    private static final Logger LOG = LoggerFactory.getLogger(SecurityConfig.class);
 
     /**
      * Creates a new instance of class {@link SecurityConfig}.
@@ -99,8 +102,11 @@ public class SecurityConfig {
         http.sessionManagement(conf -> conf.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.oauth2ResourceServer(conf -> conf.jwt(jwtConf -> {
+            String uri = TaskAdministrationApplication.determineLocalAddress(env) + "auth/jwk";
+            LOG.info("Setting JWK-Set URI to {}", uri);
+
             jwtConf.decoder(jwtDecoder);
-            jwtConf.jwkSetUri(TaskAdministrationApplication.determineLocalAddress(env) + "auth/jwk");
+            jwtConf.jwkSetUri(uri);
             jwtConf.jwtAuthenticationConverter(customJwtAuthenticationConverter());
         }));
 
@@ -112,6 +118,7 @@ public class SecurityConfig {
             if (origins.length == 0)
                 return;
 
+            LOG.info("Setting allowed CORS origins to {}", Arrays.toString(origins));
             cors.configurationSource(request -> {
                 var config = new CorsConfiguration();
                 config.setAllowedOrigins(Arrays.asList(origins));

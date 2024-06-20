@@ -143,20 +143,25 @@ public class UserService {
             user.setLockoutEnd(dto.lockoutEnd());
         }
         var dbUser = this.repository.save(user);
+        LOG.debug("Created user {} with ID {}", dbUser.getUsername(), dbUser.getId());
 
         // create ou role assignments
+        LOG.debug("Create OU-role assignments for user {}", dbUser.getUsername());
         this.organizationalUnitUserRepository.saveAll(dto.organizationalUnits()
             .stream()
             .filter(ou -> fullAdmin || ids.contains(ou.organizationalUnit())) // ensure that only valid OUs are assigned
             .map(ou -> new OrganizationalUnitUser(this.organizationalUnitRepository.getReferenceById(ou.organizationalUnit()), dbUser, ou.role()))
             .collect(Collectors.toSet()));
 
-        // create activation token
-        var token = new UserToken(TokenType.ACTIVATE_ACCOUNT, dbUser, RandomService.INSTANCE.randomString(50), OffsetDateTime.now().plusDays(7));
-        this.userTokenRepository.save(token);
+        // If not yet activated
+        if (dbUser.getActivatedDate() == null) {
+            // create activation token
+            LOG.debug("Creating activation token for user {}", dbUser.getUsername());
+            var token = new UserToken(TokenType.ACTIVATE_ACCOUNT, dbUser, RandomService.INSTANCE.randomString(50), OffsetDateTime.now().plusDays(7));
+            this.userTokenRepository.save(token);
 
-        // Send mail (if not yet activated)
-        if(dbUser.getActivatedDate() == null) {
+            // Send mail
+            LOG.debug("Sending activation mail to user {}", dbUser.getUsername());
             this.mailService.sendMail(user.getEmail(),
                 this.messageSource.getMessage("activateAccount.mail.subject", null, Locale.ENGLISH),
                 this.messageSource.getMessage("activateAccount.mail.text", new Object[]{
@@ -181,8 +186,10 @@ public class UserService {
     @PreAuthorize(AuthConstants.AUTHORITY_ADMIN_OR_ABOVE)
     public void update(long id, ModifyUserDto dto, Instant concurrencyToken) {
         var user = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("User " + id + " does not exist."));
-        if (concurrencyToken != null && user.getLastModifiedDate() != null && user.getLastModifiedDate().isAfter(concurrencyToken))
+        if (concurrencyToken != null && user.getLastModifiedDate() != null && user.getLastModifiedDate().isAfter(concurrencyToken)) {
+            LOG.debug("A user tried to update user with ID {} but the concurrency token expired", id);
             throw new ConcurrencyFailureException("User has been modified in the meantime");
+        }
 
         LOG.info("Updating user {}", user.getUsername());
         var fullAdmin = SecurityHelpers.isFullAdmin();
@@ -192,8 +199,10 @@ public class UserService {
         var ous = this.organizationalUnitUserRepository.findByUser_Id(user.getId()).stream()
             .filter(x -> fullAdmin || adminIds.contains(x.getId().getOrganizationalUnitId()))
             .toList();
-        if (!fullAdmin && adminIds.stream().noneMatch(ouId -> ous.stream().anyMatch(x -> x.getId().getOrganizationalUnitId().equals(ouId))))
+        if (!fullAdmin && adminIds.stream().noneMatch(ouId -> ous.stream().anyMatch(x -> x.getId().getOrganizationalUnitId().equals(ouId)))) {
+            LOG.warn("A user without admin-permissions tried to update user with ID {}", id);
             throw new EntityNotFoundException("User " + id + " does not exist.");
+        }
 
         // Update user
         user.setUsername(dto.username().toLowerCase());
@@ -207,6 +216,7 @@ public class UserService {
             user.setActivatedDate(dto.activated());
         }
         this.repository.save(user);
+        LOG.debug("Updated user {} with ID {}", user.getUsername(), user.getId());
 
         // Update OUs
         var toRemove = ous.stream()
@@ -222,9 +232,20 @@ public class UserService {
             .peek(ou -> dto.organizationalUnits().stream().filter(x -> ou.getOrganizationalUnit().getId().equals(x.organizationalUnit())).findFirst().ifPresent(tmp -> ou.setRole(tmp.role())))
             .toList();
 
-        this.organizationalUnitUserRepository.deleteAll(toRemove);
-        this.organizationalUnitUserRepository.saveAll(toAdd);
-        this.organizationalUnitUserRepository.saveAll(toUpdate);
+        if (!toRemove.isEmpty()) {
+            LOG.debug("Removing {} role assignments for user {}", toRemove.size(), user.getUsername());
+            this.organizationalUnitUserRepository.deleteAll(toRemove);
+        }
+
+        if (!toAdd.isEmpty()) {
+            LOG.debug("Adding {} role assignments for user {}", toAdd.size(), user.getUsername());
+            this.organizationalUnitUserRepository.saveAll(toAdd);
+        }
+
+        if (!toUpdate.isEmpty()) {
+            LOG.debug("Updating {} role assignments for user {}", toUpdate.size(), user.getUsername());
+            this.organizationalUnitUserRepository.saveAll(toUpdate);
+        }
     }
 
     /**
@@ -239,8 +260,10 @@ public class UserService {
     @PreAuthorize(AuthConstants.AUTHORITY_FULL_ADMIN)
     public void setPassword(long id, ModifyUserPasswordDto dto, Instant concurrencyToken) {
         var user = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("User " + id + " does not exist."));
-        if (concurrencyToken != null && user.getLastModifiedDate() != null && user.getLastModifiedDate().isAfter(concurrencyToken))
+        if (concurrencyToken != null && user.getLastModifiedDate() != null && user.getLastModifiedDate().isAfter(concurrencyToken)) {
+            LOG.debug("A user tried to set the password for user with ID {} but the concurrency token expired", id);
             throw new ConcurrencyFailureException("User has been modified in the meantime");
+        }
 
         // Update password
         LOG.info("Setting password for user {}", user.getUsername());
@@ -257,8 +280,10 @@ public class UserService {
     @PreAuthorize(AuthConstants.AUTHORITY_ADMIN_OR_ABOVE)
     public void deleteUser(long id) {
         var userId = SecurityHelpers.getUserId();
-        if (userId.isEmpty() || userId.get() == id)
+        if (userId.isEmpty() || userId.get() == id) {
+            LOG.warn("User {} tried to delete itself", userId);
             throw new ValidationException("A user cannot delete itself.");
+        }
 
         if (SecurityHelpers.isFullAdmin()) {
             LOG.info("Deleting user {}", id);

@@ -50,6 +50,7 @@ public class CourseCategoryService extends MoodleService {
         try {
             String responseBody = this.post(getDefaultQueryParameters("core_course_create_categories"), body);
             CourseCategory[] result = objectMapper.readValue(responseBody, CourseCategory[].class);
+            LOG.debug("Received {} course category ids for created organizational unit {}", result.length, organizationalUnit.getId());
             if (result.length > 0)
                 return CompletableFuture.completedFuture(Optional.of(result[0].id()));
         } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
@@ -81,7 +82,8 @@ public class CourseCategoryService extends MoodleService {
 
         // Send request
         try {
-            this.post(getDefaultQueryParameters("core_course_update_categories"), body);
+            var result = this.post(getDefaultQueryParameters("core_course_update_categories"), body);
+            LOG.debug("Received response for updated organizational unit {}: {}", organizationalUnit.getId(), result);
         } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
             LOG.error("Failed to update course category for organizational unit {}.", organizationalUnit.getId(), ex);
         }

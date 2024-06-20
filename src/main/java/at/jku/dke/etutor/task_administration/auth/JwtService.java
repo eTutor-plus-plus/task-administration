@@ -38,6 +38,7 @@ public class JwtService {
     private final AuthJWKSource jwkSource;
     private final int tokenLifetime;
     private final int refreshTokenLifetime;
+    private JWKSet jwkSet;
 
     /**
      * Creates a new instance of class {@link JwtService}.
@@ -76,13 +77,21 @@ public class JwtService {
             LOG.error("User {} not found. This should not have happened.", username);
             throw new UsernameNotFoundException("User " + username + " does not exist.");
         }
-        if (user.get().getActivatedDate() == null || user.get().getActivatedDate().isAfter(OffsetDateTime.now()) || !user.get().getEnabled() ||
-            (user.get().getLockoutEnd() != null && user.get().getLockoutEnd().isAfter(OffsetDateTime.now()))) {
-            LOG.error("User {} is not active or locked.", username);
+        if (user.get().getActivatedDate() == null || user.get().getActivatedDate().isAfter(OffsetDateTime.now())) {
+            LOG.error("User {} is not activated.", username);
+            throw new LockedException("User " + username + " is locked or not active.");
+        }
+        if (!user.get().getEnabled()) {
+            LOG.error("User {} is not enabled.", username);
+            throw new LockedException("User " + username + " is locked or not active.");
+        }
+        if (user.get().getLockoutEnd() != null && user.get().getLockoutEnd().isAfter(OffsetDateTime.now())) {
+            LOG.error("User {} is locked until {}.", username, user.get().getLockoutEnd());
             throw new LockedException("User " + username + " is locked or not active.");
         }
 
         // create token
+        LOG.info("Creating token for user {}", username);
         var claims = JwtClaimsSet.builder()
             .issuer("self")
             .issuedAt(Instant.now())
@@ -98,6 +107,7 @@ public class JwtService {
             .build();
 
         // create refresh token
+        LOG.debug("Creating refresh token for user {}", username);
         JwtClaimsSet refreshClaims = JwtClaimsSet.builder()
             .issuer("self")
             .issuedAt(Instant.now())
@@ -126,7 +136,7 @@ public class JwtService {
         var decoded = this.jwtDecoder.decode(refreshToken);
 
         if (decoded.getExpiresAt() == null || decoded.getExpiresAt().isBefore(Instant.now())) {
-            LOG.warn("Refresh token for user " + decoded.getClaim("sub_id") + " expired");
+            LOG.warn("Refresh token for user {} expired", decoded.getClaimAsString("sub_id"));
             throw new BadCredentialsException("Token expired");
         }
 
@@ -137,12 +147,12 @@ public class JwtService {
 
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (!auth.getName().equals(decoded.getClaim(AuthConstants.CLAIM_SUB_ID))) {
-            LOG.warn("User " + auth.getName() + " tried to use refresh token of other user");
+            LOG.warn("User {} tried to use refresh token of other user", auth.getName());
             throw new BadCredentialsException("Invalid token");
         }
 
         if (!this.passwordEncoder.matches(clientIp, decoded.getClaim(AuthConstants.CLAIM_SEC))) {
-            LOG.warn("User " + auth.getName() + " tried to use refresh token from different IP address");
+            LOG.warn("User {} tried to use refresh token from different IP address", auth.getName());
             throw new BadCredentialsException("Invalid token");
         }
 
@@ -155,17 +165,20 @@ public class JwtService {
      * @return The JWK set.
      */
     public Map<String, Object> getJWKSet() {
-        try {
-            JWK key = new RSAKey.Builder(this.jwkSource.getPublicKey())
-                .privateKey(this.jwkSource.getPrivateKey())
-                .keyID(this.jwkSource.getKeyId())
-                .build();
-            JWKSet jwkSet = new JWKSet(key);
-            return jwkSet.toJSONObject();
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException ex) {
-            LOG.error("Could not generate JWK set", ex);
-            return new HashMap<>();
+        if (this.jwkSet == null) {
+            try {
+                LOG.info("Building JWK set");
+                JWK key = new RSAKey.Builder(this.jwkSource.getPublicKey())
+                    .privateKey(this.jwkSource.getPrivateKey())
+                    .keyID(this.jwkSource.getKeyId())
+                    .build();
+                this.jwkSet = new JWKSet(key);
+            } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException ex) {
+                LOG.error("Could not generate JWK set", ex);
+                return new HashMap<>();
+            }
         }
+        return this.jwkSet.toJSONObject();
     }
 
     /**

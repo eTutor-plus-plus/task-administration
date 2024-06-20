@@ -96,5 +96,5 @@ management:
 jwt:
   private-key: private.pem
   public-key: public.pem
-  token-lifetime: 300
-  refresh-token-lifetime: 400
+  token-lifetime: 900
+  refresh-token-lifetime: 3600

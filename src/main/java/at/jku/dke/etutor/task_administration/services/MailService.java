@@ -49,7 +49,7 @@ public class MailService {
         try {
             this.mailSender.send(message);
         } catch (MailException ex) {
-            LOG.error("Could not send mail to " + to, ex);
+            LOG.error("Could not send mail to {}", to, ex);
         }
     }
 }

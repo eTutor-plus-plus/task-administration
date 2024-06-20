@@ -68,8 +68,15 @@ public class AccountService {
             LOG.warn("Someone tried to reset password for disabled user '{}'", username);
             return;
         }
-        if (user.getActivatedDate() == null) {
+        if (user.getActivatedDate() == null || user.getActivatedDate().isAfter(OffsetDateTime.now())) {
             LOG.warn("Someone tried to reset password for not activated user '{}'", username);
+            return;
+        }
+
+        // Get token count
+        var tokenCount = userTokenRepository.countActivePasswordResetTokensForUser(user.getId());
+        if (tokenCount > 5) {
+            LOG.warn("User {} requested password reset mor than 5 times in a short time", username);
             return;
         }
 
@@ -83,6 +90,7 @@ public class AccountService {
         this.userTokenRepository.save(userToken);
 
         // Send token mail
+        LOG.debug("Sending reset password email to user '{}'.", user.getUsername());
         this.mailService.sendMail(user.getEmail(),
             this.messageSource.getMessage("forgotPassword.mail.subject", null, locale),
             this.messageSource.getMessage("forgotPassword.mail.text", new Object[]{
@@ -105,10 +113,14 @@ public class AccountService {
         var userToken = this.userTokenRepository.findByToken(token).orElseThrow(() -> new ValidationException("Invalid token."));
 
         // check if token is expired
-        if (userToken.getType() != TokenType.RESET_PASSWORD)
+        if (userToken.getType() != TokenType.RESET_PASSWORD) {
+            LOG.warn("User {} tried to use token of type {} to reset password.", userToken.getUser().getId(), userToken.getType());
             throw new ValidationException("Invalid token.");
-        if (userToken.getExpiresAt().isBefore(OffsetDateTime.now()))
+        }
+        if (userToken.getExpiresAt().isBefore(OffsetDateTime.now())) {
+            LOG.warn("User {} tried to reset password with expired token.", userToken.getUser().getId());
             throw new ValidationException("Token expired.");
+        }
 
         // update password
         var user = userToken.getUser();
@@ -117,6 +129,7 @@ public class AccountService {
         this.userRepository.save(user);
 
         // delete token
+        LOG.debug("Deleting used reset token for user {}", user.getUsername());
         this.userTokenRepository.delete(userToken);
     }
 
@@ -159,10 +172,14 @@ public class AccountService {
         var userToken = this.userTokenRepository.findByToken(token).orElseThrow(() -> new ValidationException("Invalid token."));
 
         // check if token is expired
-        if (userToken.getType() != TokenType.ACTIVATE_ACCOUNT)
+        if (userToken.getType() != TokenType.ACTIVATE_ACCOUNT) {
+            LOG.warn("User {} tried to use token of type {} to activate account.", userToken.getUser().getId(), userToken.getType());
             throw new ValidationException("Invalid token.");
-        if (userToken.getExpiresAt().isBefore(OffsetDateTime.now()))
+        }
+        if (userToken.getExpiresAt().isBefore(OffsetDateTime.now())) {
+            LOG.warn("User {} tried to activate account with expired token.", userToken.getUser().getId());
             throw new ValidationException("Token expired.");
+        }
 
         var user = userToken.getUser();
         if (user.getActivatedDate() != null)
@@ -175,6 +192,7 @@ public class AccountService {
         this.userRepository.save(user);
 
         // delete token
+        LOG.debug("Deleting used activation token for user {}", user.getUsername());
         this.userTokenRepository.delete(userToken);
     }
 

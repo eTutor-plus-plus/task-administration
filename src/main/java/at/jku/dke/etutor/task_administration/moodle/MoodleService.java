@@ -98,6 +98,7 @@ public abstract class MoodleService {
             .POST(HttpRequest.BodyPublishers.ofString(encoded))
             .build();
         try (HttpClient client = this.createHttpClient()) {
+            LOG.debug("Sending POST request to {} with body {}", uri, body);
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             String bodyString = response.body();
             if (response.statusCode() != 200) {

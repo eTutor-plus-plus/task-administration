@@ -109,8 +109,10 @@ public class TaskAppService {
     @PreAuthorize(AuthConstants.AUTHORITY_FULL_ADMIN)
     public void update(long id, ModifyTaskAppDto dto, Instant concurrencyToken) {
         var taskApp = this.repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Task app " + id + " does not exist."));
-        if (concurrencyToken != null && taskApp.getLastModifiedDate() != null && taskApp.getLastModifiedDate().isAfter(concurrencyToken))
+        if (concurrencyToken != null && taskApp.getLastModifiedDate() != null && taskApp.getLastModifiedDate().isAfter(concurrencyToken)) {
+            LOG.debug("A user tried to update task app with ID {} but the concurrency token expired", id);
             throw new ConcurrencyFailureException("Task app has been modified in the meantime");
+        }
 
         LOG.info("Updating task app {}", id);
         taskApp.setTaskType(dto.taskType());
