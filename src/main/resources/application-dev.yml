@@ -3,6 +3,7 @@ logging:
   level:
     ROOT: info
     at.jku.dke: trace
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
 
 spring:
   # Database
@@ -29,7 +30,7 @@ jwt:
 # Moodle
 moodle:
   enabled: true
-  token: b27a8b79eedf23228c490c0c277c97e5
+  token: bbec36ffa4c4d926b8fd47e5720a4afe
   url: http://localhost:8000/
 
 # Cors Configuration
