@@ -395,7 +395,7 @@ public class TaskService {
 
         LOG.debug("Triggering question creation for task {}", task.getId());
         this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
-            if (moodleIds.isPresent()) {
+            if (moodleIds.isPresent() && !moodleIds.get().isEmpty()) {
                 LOG.info("Setting moodle-ids for task {} to {}", task.getId(), moodleIds.get().stream().map(TaskMoodleId::getMoodleId).map(x -> x + "").collect(Collectors.joining(",")));
                 this.taskMoodleIdRepository.saveAll(moodleIds.get()); // moodleSync flag of task is updated in databases by trigger
             }
@@ -416,10 +416,10 @@ public class TaskService {
         var task = this.repository.findByIdAndOrganizationalUnit(id).orElseThrow(() -> new EntityNotFoundException("Task " + id + " does not exist."));
         LOG.debug("Triggering question update for task {}", task.getId());
         this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
-            if (moodleIds.isPresent()) {
-                LOG.debug("Deleting all moodle ids for task {}", task.getId());
-                this.taskMoodleIdRepository.deleteByTaskId(task.getId());
+            LOG.debug("Deleting all moodle ids for task {}", task.getId());
+            this.taskMoodleIdRepository.deleteByTaskId(task.getId());
 
+            if (moodleIds.isPresent() && !moodleIds.get().isEmpty()) {
                 LOG.info("Setting moodle-ids for task {} to {}", task.getId(), moodleIds.get().stream().map(TaskMoodleId::getMoodleId).map(x -> x + "").collect(Collectors.joining(",")));
                 this.taskMoodleIdRepository.saveAll(moodleIds.get());
             }  // moodleSync flag of task is updated in databases by trigger

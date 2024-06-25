@@ -1,6 +1,7 @@
 package at.jku.dke.etutor.task_administration.services;
 
 import at.jku.dke.etutor.task_administration.auth.SecurityHelpers;
+import at.jku.dke.etutor.task_administration.data.entities.AuditedEntity;
 import at.jku.dke.etutor.task_administration.data.entities.TaskGroup;
 import at.jku.dke.etutor.task_administration.data.entities.TaskStatus;
 import at.jku.dke.etutor.task_administration.data.repositories.OrganizationalUnitRepository;
@@ -40,6 +41,7 @@ public class TaskGroupService {
     private static final Logger LOG = LoggerFactory.getLogger(TaskGroupService.class);
 
     private final TaskGroupRepository repository;
+    private final TaskService taskService;
     private final OrganizationalUnitRepository organizationalUnitRepository;
     private final TaskAppCommunicationService taskAppCommunicationService;
 
@@ -47,11 +49,14 @@ public class TaskGroupService {
      * Creates a new instance of class {@link TaskGroupService}.
      *
      * @param repository                   The task group repository.
+     * @param taskService                  The task service.
      * @param organizationalUnitRepository The organizational unit repository.
      * @param taskAppCommunicationService  The task app communication service.
      */
-    public TaskGroupService(TaskGroupRepository repository, OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService) {
+    public TaskGroupService(TaskGroupRepository repository, TaskService taskService,
+                            OrganizationalUnitRepository organizationalUnitRepository, TaskAppCommunicationService taskAppCommunicationService) {
         this.repository = repository;
+        this.taskService = taskService;
         this.organizationalUnitRepository = organizationalUnitRepository;
         this.taskAppCommunicationService = taskAppCommunicationService;
     }
@@ -215,6 +220,8 @@ public class TaskGroupService {
             throw new ConcurrencyFailureException("Task group has been modified in the meantime");
         }
 
+        boolean descriptionChanged = !dto.descriptionDe().equals(taskGroup.getDescriptionDe()) || !dto.descriptionEn().equals(taskGroup.getDescriptionEn());
+
         LOG.info("Updating task group {}", id);
         taskGroup.setName(dto.name());
         taskGroup.setOrganizationalUnit(this.organizationalUnitRepository.getReferenceById(dto.organizationalUnitId()));
@@ -249,6 +256,9 @@ public class TaskGroupService {
             }
         }
         this.repository.save(taskGroup);
+
+        if (descriptionChanged)
+            this.updateMoodle(taskGroup);
     }
 
     /**
@@ -276,6 +286,16 @@ public class TaskGroupService {
             LOG.warn("User {} tried to delete task-group {}", SecurityHelpers.getUserId(), id);
             throw new InsufficientAuthenticationException("User is not allowed to delete the task group");
         }
+    }
+
+    /**
+     * Updates all moodle questions for tasks of this task group.
+     *
+     * @param taskGroup The changed task group.
+     */
+    private void updateMoodle(TaskGroup taskGroup) {
+        LOG.debug("Syncing all tasks of task-group {} to Moodle", taskGroup.getId());
+        taskGroup.getTasks().stream().map(AuditedEntity::getId).forEach(this.taskService::updateMoodleObjectsForTask);
     }
 
     //#endregion

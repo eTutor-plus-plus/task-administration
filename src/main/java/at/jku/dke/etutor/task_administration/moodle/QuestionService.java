@@ -51,6 +51,7 @@ public class QuestionService extends MoodleService {
             task.getStatus() != TaskStatus.APPROVED ||
             task.getTaskCategories().isEmpty() ||
             task.getOrganizationalUnit().getMoodleId() == null) {
+            LOG.warn("Aborting moodle question creation for task {} as the task is not approved, does not belong to a task-category, the org-unit is not synced or moodle-sync is disabled", task.getId());
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
@@ -87,8 +88,9 @@ public class QuestionService extends MoodleService {
      */
     // @Async does not work
     public CompletableFuture<Optional<List<TaskMoodleId>>> updateQuestionFromTask(Task task) {
-        LOG.info("Starting Moodle Task sync");
+        LOG.info("Starting Moodle Task sync for task {}", task.getId());
         if (this.config.isDisabled() || task.getStatus() != TaskStatus.APPROVED) {
+            LOG.warn("Aborting moodle task sync for task {} as the task is not approved or moodle-sync is disabled", task.getId());
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
