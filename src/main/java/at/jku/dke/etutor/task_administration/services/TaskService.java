@@ -23,6 +23,7 @@ import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -376,6 +377,7 @@ public class TaskService {
 
             LOG.info("Deleting task {}", id);
             this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());
+            this.questionService.markQuestionAsDeleted(task);
             this.repository.deleteById(id);
         } else {
             LOG.warn("User {} tried to delete task {}", SecurityHelpers.getUserId(), id);
@@ -427,6 +429,17 @@ public class TaskService {
             LOG.error("Error while updating Moodle objects for task {}", id, ex);
             return null;
         });
+    }
+
+    /**
+     * Marks the task as deleted in Moodle.
+     *
+     * @param id The identifier of the task.
+     */
+    @Async
+    public void markMoodleObjectsForTaskAsDeleted(long id) {
+        var task = this.repository.findById(id);
+        task.ifPresent(this.questionService::markQuestionAsDeleted);
     }
 
     //#endregion

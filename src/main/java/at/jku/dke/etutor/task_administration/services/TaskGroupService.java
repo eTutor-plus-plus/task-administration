@@ -281,6 +281,7 @@ public class TaskGroupService {
 
             LOG.info("Deleting task group {}", id);
             this.taskAppCommunicationService.deleteTaskGroup(taskGroup.getId(), taskGroup.getTaskGroupType());
+            this.deleteMoodle(taskGroup);
             this.repository.deleteById(id);
         } else {
             LOG.warn("User {} tried to delete task-group {}", SecurityHelpers.getUserId(), id);
@@ -296,6 +297,16 @@ public class TaskGroupService {
     private void updateMoodle(TaskGroup taskGroup) {
         LOG.debug("Syncing all tasks of task-group {} to Moodle", taskGroup.getId());
         taskGroup.getTasks().stream().map(AuditedEntity::getId).forEach(this.taskService::updateMoodleObjectsForTask);
+    }
+
+    /**
+     * Marks all questions of this task group as deleted.
+     *
+     * @param taskGroup The to be deleted task group.
+     */
+    private void deleteMoodle(TaskGroup taskGroup) {
+        LOG.debug("Marking all Moodle-questions for tasks of task-group {} as deleted", taskGroup.getId());
+        taskGroup.getTasks().stream().map(AuditedEntity::getId).forEach(this.taskService::markMoodleObjectsForTaskAsDeleted);
     }
 
     //#endregion
