@@ -344,6 +344,7 @@ public class UserService {
                 var in = criteriaBuilder.in(root.get("organizationalUnits").get("id").get("organizationalUnitId"));
                 SecurityHelpers.getOrganizationalUnitsAsAdmin().forEach(in::value);
                 predicates.add(in);
+                query.distinct(true);
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

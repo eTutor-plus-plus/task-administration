@@ -23,6 +23,7 @@ import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -376,6 +377,7 @@ public class TaskService {
 
             LOG.info("Deleting task {}", id);
             this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());
+            this.questionService.markQuestionAsDeleted(task);
             this.repository.deleteById(id);
         } else {
             LOG.warn("User {} tried to delete task {}", SecurityHelpers.getUserId(), id);
@@ -395,7 +397,7 @@ public class TaskService {
 
         LOG.debug("Triggering question creation for task {}", task.getId());
         this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
-            if (moodleIds.isPresent()) {
+            if (moodleIds.isPresent() && !moodleIds.get().isEmpty()) {
                 LOG.info("Setting moodle-ids for task {} to {}", task.getId(), moodleIds.get().stream().map(TaskMoodleId::getMoodleId).map(x -> x + "").collect(Collectors.joining(",")));
                 this.taskMoodleIdRepository.saveAll(moodleIds.get()); // moodleSync flag of task is updated in databases by trigger
             }
@@ -416,10 +418,10 @@ public class TaskService {
         var task = this.repository.findByIdAndOrganizationalUnit(id).orElseThrow(() -> new EntityNotFoundException("Task " + id + " does not exist."));
         LOG.debug("Triggering question update for task {}", task.getId());
         this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
-            if (moodleIds.isPresent()) {
-                LOG.debug("Deleting all moodle ids for task {}", task.getId());
-                this.taskMoodleIdRepository.deleteByTaskId(task.getId());
+            LOG.debug("Deleting all moodle ids for task {}", task.getId());
+            this.taskMoodleIdRepository.deleteByTaskId(task.getId());
 
+            if (moodleIds.isPresent() && !moodleIds.get().isEmpty()) {
                 LOG.info("Setting moodle-ids for task {} to {}", task.getId(), moodleIds.get().stream().map(TaskMoodleId::getMoodleId).map(x -> x + "").collect(Collectors.joining(",")));
                 this.taskMoodleIdRepository.saveAll(moodleIds.get());
             }  // moodleSync flag of task is updated in databases by trigger
@@ -427,6 +429,17 @@ public class TaskService {
             LOG.error("Error while updating Moodle objects for task {}", id, ex);
             return null;
         });
+    }
+
+    /**
+     * Marks the task as deleted in Moodle.
+     *
+     * @param id The identifier of the task.
+     */
+    @Async
+    public void markMoodleObjectsForTaskAsDeleted(long id) {
+        var task = this.repository.findById(id);
+        task.ifPresent(this.questionService::markQuestionAsDeleted);
     }
 
     //#endregion

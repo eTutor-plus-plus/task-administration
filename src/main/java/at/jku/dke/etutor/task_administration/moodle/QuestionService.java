@@ -51,6 +51,7 @@ public class QuestionService extends MoodleService {
             task.getStatus() != TaskStatus.APPROVED ||
             task.getTaskCategories().isEmpty() ||
             task.getOrganizationalUnit().getMoodleId() == null) {
+            LOG.warn("Aborting moodle question creation for task {} as the task is not approved, does not belong to a task-category, the org-unit is not synced or moodle-sync is disabled", task.getId());
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
@@ -87,8 +88,9 @@ public class QuestionService extends MoodleService {
      */
     // @Async does not work
     public CompletableFuture<Optional<List<TaskMoodleId>>> updateQuestionFromTask(Task task) {
-        LOG.info("Starting Moodle Task sync");
-        if (this.config.isDisabled() || task.getStatus() != TaskStatus.APPROVED) {
+        LOG.info("Starting Moodle Task sync for task {}", task.getId());
+        if (this.config.isDisabled() || task.getStatus() != TaskStatus.APPROVED || task.getOrganizationalUnit().getMoodleId() == null) {
+            LOG.warn("Aborting moodle task sync for task {} as the task is not approved, the organizational unit is not synced or moodle-sync is disabled", task.getId());
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
@@ -174,6 +176,39 @@ public class QuestionService extends MoodleService {
             }
         }
         return CompletableFuture.completedFuture(Optional.of(moodleIds));
+    }
+
+    /**
+     * Marks the questions for the task as deleted in Moodle.
+     *
+     * @param task The task to mark as deleted.
+     */
+    //@Async
+    public void markQuestionAsDeleted(Task task) {
+        if (this.config.isDisabled()) {
+            LOG.warn("Aborting moodle task deprecation for task {} as moodle-sync is disabled", task.getId());
+            return;
+        }
+
+        var moodleIds = taskMoodleIdRepository.findById_TaskId(task.getId());
+        for (TaskMoodleId id : moodleIds) {
+            if (task.getOrganizationalUnit() == null || task.getOrganizationalUnit().getMoodleId() == null)
+                continue;
+
+            Map<String, String> body_question = new HashMap<>();
+            body_question.put("data[course_category_id]", task.getOrganizationalUnit().getMoodleId().toString());
+            body_question.put("data[question_id]", id.getMoodleId().toString());
+            body_question.put("data[title_extension]", "DELETED_");
+
+            try {
+                LOG.debug("Marking moodle question {} for task {} as deleted", id.getMoodleId(), task.getId());
+                String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_deprecate_old_question"), body_question);
+                Question result = objectMapper.readValue(responseBody, Question.class);
+                LOG.info("Marked question with ID {} as deleted", result.questionid);
+            } catch (URISyntaxException | RuntimeException | InterruptedException | IOException ex) {
+                LOG.error("Failed to mark questions for task {} as deleted", task.getId(), ex);
+            }
+        }
     }
 
     private Map<String, String> buildTaskParameterMap(Task task, TaskCategory category) {
