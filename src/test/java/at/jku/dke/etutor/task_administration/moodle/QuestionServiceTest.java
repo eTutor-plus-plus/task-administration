@@ -1,9 +1,6 @@
 package at.jku.dke.etutor.task_administration.moodle;
 
-import at.jku.dke.etutor.task_administration.data.entities.OrganizationalUnit;
-import at.jku.dke.etutor.task_administration.data.entities.Task;
-import at.jku.dke.etutor.task_administration.data.entities.TaskCategory;
-import at.jku.dke.etutor.task_administration.data.entities.TaskGroup;
+import at.jku.dke.etutor.task_administration.data.entities.*;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskCategoryRepository;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskGroupRepository;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskMoodleIdRepository;
@@ -39,7 +36,7 @@ class QuestionServiceTest {
         var service = new QuestionTestService(this.config, this.categoryRepository, this.taskMoodleIdRepository, this.taskGroupRepository);
 
         // Act
-        var result = service.createQuestionFromTask(null).get();
+        var result = service.createQuestionFromTask(new Task()).get();
 
         // Assert
         assertThat(result).isEmpty();
@@ -106,6 +103,7 @@ class QuestionServiceTest {
 
         var task = new Task();
         task.setId(91L);
+        task.setStatus(TaskStatus.APPROVED);
         task.setTitle("Test");
         task.setTaskType("sql");
         task.setDescriptionDe("Text DE");
@@ -116,7 +114,7 @@ class QuestionServiceTest {
 
         when(this.categoryRepository.findById(cat.getId())).thenReturn(Optional.of(cat));
         when(this.categoryRepository.findById(cat2.getId())).thenReturn(Optional.empty());
-        service.response = "{\"questionId\": 99}";
+        service.response = "{\"questionid\": 99}";
 
         // Act
         var result = service.createQuestionFromTask(task).get();
@@ -136,7 +134,7 @@ class QuestionServiceTest {
         var service = new QuestionTestService(this.config, this.categoryRepository, this.taskMoodleIdRepository, this.taskGroupRepository);
 
         // Act
-        var result = service.updateQuestionFromTask(null).get();
+        var result = service.updateQuestionFromTask(new Task()).get();
 
         // Assert
         assertThat(result).isEmpty();

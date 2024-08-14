@@ -127,7 +127,7 @@ class JwtServiceTest {
         assertThat(result.refreshToken()).isNotEmpty();
         assertThat(result.accessToken()).isNotEmpty();
         assertThat(result.tokenType()).isEqualTo("Bearer");
-        assertThat(result.expiresIn()).isEqualTo(300);
+        assertThat(result.expiresIn()).isEqualTo(900);
 
         var accessToken = this.jwtDecoder.decode(result.accessToken());
         assertThat(accessToken).isNotNull();
@@ -168,7 +168,7 @@ class JwtServiceTest {
         assertThat(result.refreshToken()).isNotEmpty();
         assertThat(result.accessToken()).isNotEmpty();
         assertThat(result.tokenType()).isEqualTo("Bearer");
-        assertThat(result.expiresIn()).isEqualTo(300);
+        assertThat(result.expiresIn()).isEqualTo(900);
     }
 
     @Test
