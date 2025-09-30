@@ -240,7 +240,7 @@ public class QuestionService extends MoodleService {
         body_question.put("data[course_category_id]", task.getOrganizationalUnit().getMoodleId().toString());
         body_question.put("data[points]", task.getMaxPoints().toString());
         body_question.put("data[coderunnertype]", "etutor-" + task.getTaskType());
-        body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":2}");
+        body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":0}");
         body_question.put("data[examTask]", task.isExamTask() + "");
         if (taskGroup != null)
             body_question.put("data[tag]", taskGroup.getName());
