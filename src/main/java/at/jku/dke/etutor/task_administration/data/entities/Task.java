@@ -8,9 +8,7 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.StringJoiner;
+import java.util.*;
 
 /**
  * Represents a task.
@@ -77,6 +75,15 @@ public class Task extends AuditedEntity {
         joinColumns = @JoinColumn(name = "task_id"),
         inverseJoinColumns = @JoinColumn(name = "task_category_id"))
     private Set<TaskCategory> taskCategories = new LinkedHashSet<>();
+
+
+    //the column of feedback level for each task_task_category relation
+    @ManyToMany
+    @JoinTable(name = "tasks_task_categories",
+        joinColumns = @JoinColumn(name = "task_id"),
+        inverseJoinColumns = @JoinColumn(name = "task_category_id"))
+    @Column(name = "feedback_level", nullable = false)
+    private Map<TaskCategory,Integer> feedbackLevels = new LinkedHashMap<>();
 
     /**
      * Creates a new instance of class {@link Task}.

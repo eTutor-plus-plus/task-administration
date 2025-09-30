@@ -376,8 +376,8 @@ public class TaskService {
             }
 
             LOG.info("Deleting task {}", id);
-            this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());
             this.questionService.markQuestionAsDeleted(task);
+            this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());
             this.repository.deleteById(id);
         } else {
             LOG.warn("User {} tried to delete task {}", SecurityHelpers.getUserId(), id);
