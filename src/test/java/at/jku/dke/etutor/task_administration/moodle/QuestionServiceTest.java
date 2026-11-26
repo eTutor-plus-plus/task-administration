@@ -4,6 +4,7 @@ import at.jku.dke.etutor.task_administration.data.entities.*;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskCategoryRepository;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskGroupRepository;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskMoodleIdRepository;
+import at.jku.dke.etutor.task_administration.dto.TaskCategoryFeedbackLevelDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -124,6 +125,77 @@ class QuestionServiceTest {
         assertThat(result.get()).allMatch(taskMoodleId -> taskMoodleId.getMoodleId() == 99L);
         assertTrue(service.postCalled);
     }
+
+    @Test
+    void buildTemplateParams_containsAllFeedbackLevels() {
+        // Arrange
+        var task = new Task();
+        task.setId(5L);
+
+        // Act
+        var result = QuestionService.buildTemplateParams(task, new TaskCategoryFeedbackLevelDto(1L, (short) 3, (short) 2));
+
+        // Assert
+        assertThat(result).isEqualTo("{\"TASK_ID\": 5, \"FEEDBACK_LEVEL\": 2, \"FEEDBACK_LEVEL_SUBMIT\": 3, \"FEEDBACK_LEVEL_DIAGNOSE\": 2}");
+    }
+
+    @Test
+    void createQuestionFromTask_usesFeedbackLevelsOfCategory() throws ExecutionException, InterruptedException {
+        // Arrange
+        var service = new QuestionTestService(this.config, this.categoryRepository, this.taskMoodleIdRepository, this.taskGroupRepository);
+        var task = createApprovedTaskWithCategory();
+        service.response = "{\"questionid\": 99}";
+
+        // Act
+        var result = service.createQuestionFromTask(task, Map.of(1L, new TaskCategoryFeedbackLevelDto(1L, (short) 1, (short) 3))).get();
+
+        // Assert
+        assertThat(result).isPresent();
+        assertThat(service.lastBody.get("data[templateparams]"))
+            .isEqualTo("{\"TASK_ID\": 91, \"FEEDBACK_LEVEL\": 3, \"FEEDBACK_LEVEL_SUBMIT\": 1, \"FEEDBACK_LEVEL_DIAGNOSE\": 3}");
+    }
+
+    @Test
+    void createQuestionFromTask_withoutFeedbackLevels_usesDefault() throws ExecutionException, InterruptedException {
+        // Arrange
+        var service = new QuestionTestService(this.config, this.categoryRepository, this.taskMoodleIdRepository, this.taskGroupRepository);
+        var task = createApprovedTaskWithCategory();
+        service.response = "{\"questionid\": 99}";
+
+        // Act
+        var result = service.createQuestionFromTask(task).get();
+
+        // Assert
+        assertThat(result).isPresent();
+        assertThat(service.lastBody.get("data[templateparams]"))
+            .isEqualTo("{\"TASK_ID\": 91, \"FEEDBACK_LEVEL\": 0, \"FEEDBACK_LEVEL_SUBMIT\": 0, \"FEEDBACK_LEVEL_DIAGNOSE\": 0}");
+    }
+
+    private Task createApprovedTaskWithCategory() {
+        var ou = new OrganizationalUnit();
+        ou.setId(2L);
+        ou.setMoodleId(10);
+
+        var cat = new TaskCategory();
+        cat.setId(1L);
+        cat.setName("Category");
+        cat.setOrganizationalUnit(ou);
+        cat.setMoodleId(7);
+
+        var task = new Task();
+        task.setId(91L);
+        task.setStatus(TaskStatus.APPROVED);
+        task.setTitle("Test");
+        task.setTaskType("sql");
+        task.setDescriptionDe("Text DE");
+        task.setDescriptionEn("Text EN");
+        task.setTaskCategories(Set.of(cat));
+        task.setOrganizationalUnit(ou);
+        task.setMaxPoints(BigDecimal.TEN);
+
+        when(this.categoryRepository.findById(cat.getId())).thenReturn(Optional.of(cat));
+        return task;
+    }
     //#endregion
 
     //#region --- UPDATE ---
@@ -146,6 +218,7 @@ class QuestionServiceTest {
         String response;
         boolean throwException;
         boolean postCalled;
+        Map<String, String> lastBody;
 
         protected QuestionTestService(MoodleConfig config,
                                       TaskCategoryRepository categoryRepository,
@@ -157,6 +230,7 @@ class QuestionServiceTest {
         @Override
         protected String post(Map<String, String> queryParameters, Map<String, String> body) throws URISyntaxException, IOException, InterruptedException {
             this.postCalled = true;
+            this.lastBody = body;
             if (throwException)
                 throw new IOException("Test");
             return response;
