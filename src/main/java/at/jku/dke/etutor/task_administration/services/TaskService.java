@@ -381,9 +381,19 @@ public class TaskService {
             }
 
             LOG.info("Deleting task {}", id);
+
+            // The moodle ids have to be removed explicitly: if they stay managed, Hibernate cancels the removal of the
+            // task at flush time (because of their @MapsId association) and the task silently remains in the database.
+            var moodleIds = this.taskMoodleIdRepository.findById_TaskId(task.getId());
+            this.taskMoodleIdRepository.deleteAll(moodleIds);
+
+            // Delete the task here first, so that a failing request to the task app rolls back the deletion
+            // instead of leaving a task whose data no longer exists in the task app.
+            this.repository.delete(task);
+            this.repository.flush();
+
             this.taskAppCommunicationService.deleteTask(task.getId(), task.getTaskType());
-            this.questionService.markQuestionAsDeleted(task);
-            this.repository.deleteById(id);
+            this.questionService.markQuestionAsDeleted(task, moodleIds);
         } else {
             LOG.warn("User {} tried to delete task {}", SecurityHelpers.getUserId(), id);
             throw new InsufficientAuthenticationException("User is not allowed to delete the task");

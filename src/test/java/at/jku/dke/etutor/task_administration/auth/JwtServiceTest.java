@@ -138,7 +138,7 @@ class JwtServiceTest {
         assertThat(accessToken.getClaimAsString("email")).isEqualTo(user.getEmail());
         assertThat(accessToken.getClaimAsString("preferred_username")).isEqualTo(user.getUsername());
         assertThat(accessToken.getClaimAsString(AuthConstants.CLAIM_FULL_ADMIN)).isEqualTo(Boolean.toString(user.isFullAdmin()));
-        assertThat(accessToken.getClaimAsString(AuthConstants.CLAIM_ROLES)).isEqualTo("[{organizationalUnit=1, role=INSTRUCTOR}]");
+        assertThat(accessToken.getClaimAsString(AuthConstants.CLAIM_ROLES)).isEqualTo("[{organizationalUnit=" + ou.getId() + ", role=INSTRUCTOR}]");
 
         var refreshToken = this.jwtDecoder.decode(result.refreshToken());
         assertThat(refreshToken).isNotNull();
