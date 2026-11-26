@@ -10,6 +10,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
  * @param status               The status of the task.
  * @param taskGroupId          The ID of the task group.
  * @param taskCategoryIds      The IDs of the task categories.
+ * @param taskCategoryFeedbackLevels The feedback levels per task category.
  * @param moodleSynced         The boolean if the task is synced to Moodle.
  * @param examTask             Whether the task is an exam task.
  * @param createdBy            The creation user.
@@ -38,6 +40,7 @@ import java.util.stream.Collectors;
  */
 public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @NotNull String title, @NotNull String descriptionDe, @NotNull String descriptionEn,
                       @NotNull Short difficulty, @NotNull BigDecimal maxPoints, @NotNull String taskType, @NotNull TaskStatus status, Long taskGroupId, Set<Long> taskCategoryIds,
+                      List<TaskCategoryFeedbackLevelDto> taskCategoryFeedbackLevels,
                       boolean moodleSynced, boolean examTask,
                       String createdBy, Instant createdDate, String lastModifiedBy, Instant lastModifiedDate, String approvedBy,
                       OffsetDateTime approvedDate) implements Serializable {
@@ -58,6 +61,7 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getStatus(),
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             null, // prevent lazy loading of not required categories
+            null,
             task.isMoodleSynced(),
             task.isExamTask(),
             task.getCreatedBy(),
@@ -75,6 +79,17 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
      * @param taskCategories The task categories.
      */
     public TaskDto(Task task, Set<TaskCategory> taskCategories) {
+        this(task, taskCategories, null);
+    }
+
+    /**
+     * Creates a new instance of class {@link TaskDto} based on an existing {@link Task}.
+     *
+     * @param task           The task to copy.
+     * @param taskCategories The task categories.
+     * @param feedbackLevels The feedback levels per task category.
+     */
+    public TaskDto(Task task, Set<TaskCategory> taskCategories, List<TaskCategoryFeedbackLevelDto> feedbackLevels) {
         this(task.getId(),
             task.getOrganizationalUnit().getId(),
             task.getTitle(),
@@ -86,6 +101,7 @@ public record TaskDto(@NotNull Long id, @NotNull Long organizationalUnitId, @Not
             task.getStatus(),
             task.getTaskGroup() != null ? task.getTaskGroup().getId() : null,
             taskCategories != null ? taskCategories.stream().map(AuditedEntity::getId).collect(Collectors.toSet()) : null,
+            feedbackLevels,
             task.isMoodleSynced(),
             task.isExamTask(),
             task.getCreatedBy(),

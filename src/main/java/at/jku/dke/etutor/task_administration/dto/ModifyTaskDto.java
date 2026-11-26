@@ -6,6 +6,7 @@ import jakarta.validation.constraints.*;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,6 +24,7 @@ import java.util.Set;
  * @param taskGroupId          The ID of the task group.
  * @param examTask             Whether the task is an exam task.
  * @param taskCategoryIds      The IDs of the task categories.
+ * @param taskCategoryFeedbackLevels The feedback levels per task category (optional; if {@code null}, the stored levels are kept).
  * @param additionalData       The additional data of the task.
  */
 public record ModifyTaskDto(@NotNull Long organizationalUnitId,
@@ -36,5 +38,6 @@ public record ModifyTaskDto(@NotNull Long organizationalUnitId,
                             Long taskGroupId,
                             @NotNull boolean examTask,
                             Set<@NotNull Long> taskCategoryIds,
+                            List<@NotNull @Valid TaskCategoryFeedbackLevelDto> taskCategoryFeedbackLevels,
                             @Valid Map<String, Object> additionalData) implements Serializable {
 }
