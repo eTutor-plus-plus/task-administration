@@ -9,6 +9,7 @@ import at.jku.dke.etutor.task_administration.data.repositories.*;
 import at.jku.dke.etutor.task_administration.dto.CombinedDto;
 import at.jku.dke.etutor.task_administration.dto.ModifyTaskDto;
 import at.jku.dke.etutor.task_administration.dto.SubmitSubmissionDto;
+import at.jku.dke.etutor.task_administration.dto.TaskCategoryFeedbackLevelDto;
 import at.jku.dke.etutor.task_administration.dto.TaskDto;
 import at.jku.dke.etutor.task_administration.moodle.QuestionService;
 import jakarta.persistence.EntityNotFoundException;
@@ -35,7 +36,9 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -111,7 +114,7 @@ public class TaskService {
     @Transactional(readOnly = true)
     public Optional<CombinedDto<TaskDto>> getTask(long id) {
         LOG.debug("Loading task {}", id);
-        var dto = this.repository.findOne(new SingleSpecification(id)).map(task -> new TaskDto(task, task.getTaskCategories()));
+        var dto = this.repository.findOne(new SingleSpecification(id)).map(task -> new TaskDto(task, task.getTaskCategories(), this.repository.findFeedbackLevelsByTaskId(task.getId())));
         if (dto.isPresent()) {
             if (dto.get().examTask() && SecurityHelpers.isTutor(dto.get().organizationalUnitId()))
                 throw new EntityNotFoundException();
@@ -215,6 +218,7 @@ public class TaskService {
         task.setMoodleSynced(task.getTaskCategories().isEmpty() || task.getStatus() != TaskStatus.APPROVED);
 
         task = this.repository.save(task);
+        this.saveFeedbackLevels(task, dto);
         var result = this.taskAppCommunicationService.createTask(task.getId(), dto);
         if (result != null) {
             boolean modified = false;
@@ -350,6 +354,7 @@ public class TaskService {
         }
 
         this.repository.save(task);
+        this.saveFeedbackLevels(task, dto);
 
         // only syncing to moodle if the task is approved
         if (task.getStatus() == TaskStatus.APPROVED) {
@@ -386,6 +391,38 @@ public class TaskService {
     }
 
     /**
+     * Stores the feedback levels of the task categories of the task.
+     * <p>
+     * If the DTO does not contain feedback levels, the stored levels are kept (new categories use the default level).
+     *
+     * @param task The saved task.
+     * @param dto  The task data.
+     */
+    private void saveFeedbackLevels(Task task, ModifyTaskDto dto) {
+        if (dto.taskCategoryFeedbackLevels() == null || dto.taskCategoryIds() == null)
+            return;
+
+        this.repository.flush(); // ensure that the category assignments exist in the database
+        for (TaskCategoryFeedbackLevelDto level : dto.taskCategoryFeedbackLevels()) {
+            if (!dto.taskCategoryIds().contains(level.taskCategoryId()))
+                continue;
+            LOG.debug("Setting feedback levels of task {} in category {} to submit={}, diagnose={}", task.getId(), level.taskCategoryId(), level.submitFeedbackLevel(), level.diagnoseFeedbackLevel());
+            this.repository.updateFeedbackLevels(task.getId(), level.taskCategoryId(), level.submitFeedbackLevel(), level.diagnoseFeedbackLevel());
+        }
+    }
+
+    /**
+     * Returns the feedback levels of the task per task category.
+     *
+     * @param taskId The task identifier.
+     * @return Map of task category identifier to feedback levels.
+     */
+    private Map<Long, TaskCategoryFeedbackLevelDto> getFeedbackLevelMap(long taskId) {
+        return this.repository.findFeedbackLevelsByTaskId(taskId).stream()
+            .collect(Collectors.toMap(TaskCategoryFeedbackLevelDto::taskCategoryId, Function.identity()));
+    }
+
+    /**
      * Called when a task has been created.
      *
      * @param task The task.
@@ -396,7 +433,8 @@ public class TaskService {
             return;
 
         LOG.debug("Triggering question creation for task {}", task.getId());
-        this.questionService.createQuestionFromTask(task).thenAccept(moodleIds -> {
+        var feedbackLevels = this.getFeedbackLevelMap(task.getId());
+        this.questionService.createQuestionFromTask(task, feedbackLevels).thenAccept(moodleIds -> {
             if (moodleIds.isPresent() && !moodleIds.get().isEmpty()) {
                 LOG.info("Setting moodle-ids for task {} to {}", task.getId(), moodleIds.get().stream().map(TaskMoodleId::getMoodleId).map(x -> x + "").collect(Collectors.joining(",")));
                 this.taskMoodleIdRepository.saveAll(moodleIds.get()); // moodleSync flag of task is updated in databases by trigger
@@ -417,7 +455,8 @@ public class TaskService {
     public void updateMoodleObjectsForTask(long id) {
         var task = this.repository.findByIdAndOrganizationalUnit(id).orElseThrow(() -> new EntityNotFoundException("Task " + id + " does not exist."));
         LOG.debug("Triggering question update for task {}", task.getId());
-        this.questionService.updateQuestionFromTask(task).thenAccept(moodleIds -> {
+        var feedbackLevels = this.getFeedbackLevelMap(task.getId());
+        this.questionService.updateQuestionFromTask(task, feedbackLevels).thenAccept(moodleIds -> {
             LOG.debug("Deleting all moodle ids for task {}", task.getId());
             this.taskMoodleIdRepository.deleteByTaskId(task.getId());
 

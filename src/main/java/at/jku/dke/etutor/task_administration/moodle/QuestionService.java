@@ -4,6 +4,7 @@ import at.jku.dke.etutor.task_administration.data.entities.*;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskCategoryRepository;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskGroupRepository;
 import at.jku.dke.etutor.task_administration.data.repositories.TaskMoodleIdRepository;
+import at.jku.dke.etutor.task_administration.dto.TaskCategoryFeedbackLevelDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,18 @@ public class QuestionService extends MoodleService {
      */
     @Async
     public CompletableFuture<Optional<List<TaskMoodleId>>> createQuestionFromTask(Task task) {
+        return this.createQuestionFromTask(task, Map.of());
+    }
+
+    /**
+     * Creates a question in Moodle for each category in the given Task
+     *
+     * @param task           The task to create the questions.
+     * @param feedbackLevels The feedback levels per task category id; missing categories use the default level.
+     * @return A list of all created moodleIDs as List<TaskMoodleId>.
+     */
+    @Async
+    public CompletableFuture<Optional<List<TaskMoodleId>>> createQuestionFromTask(Task task, Map<Long, TaskCategoryFeedbackLevelDto> feedbackLevels) {
         if (this.config.isDisabled() ||
             task.getStatus() != TaskStatus.APPROVED ||
             task.getTaskCategories().isEmpty() ||
@@ -65,7 +78,7 @@ public class QuestionService extends MoodleService {
             if (category.isEmpty())
                 continue;
 
-            Map<String, String> body_question = this.buildTaskParameterMap(task, category.get());
+            Map<String, String> body_question = this.buildTaskParameterMap(task, category.get(), feedbackLevels);
             try {
                 LOG.debug("Creating moodle questions for task {} and category {}", task.getId(), categoryId);
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_create_question"), body_question);
@@ -88,6 +101,18 @@ public class QuestionService extends MoodleService {
      */
     // @Async does not work
     public CompletableFuture<Optional<List<TaskMoodleId>>> updateQuestionFromTask(Task task) {
+        return this.updateQuestionFromTask(task, Map.of());
+    }
+
+    /**
+     * Updates questions already existing in Moodle to the given task
+     *
+     * @param task           Task to which the questions should be updated.
+     * @param feedbackLevels The feedback levels per task category id; missing categories use the default level.
+     * @return A list of all created moodleIDs as List<TaskMoodleId>.
+     */
+    // @Async does not work
+    public CompletableFuture<Optional<List<TaskMoodleId>>> updateQuestionFromTask(Task task, Map<Long, TaskCategoryFeedbackLevelDto> feedbackLevels) {
         LOG.info("Starting Moodle Task sync for task {}", task.getId());
         if (this.config.isDisabled() || task.getStatus() != TaskStatus.APPROVED || task.getOrganizationalUnit().getMoodleId() == null) {
             LOG.warn("Aborting moodle task sync for task {} as the task is not approved, the organizational unit is not synced or moodle-sync is disabled", task.getId());
@@ -121,7 +146,7 @@ public class QuestionService extends MoodleService {
             if (category.isEmpty())
                 continue;
 
-            Map<String, String> body_question = this.buildTaskParameterMap(task, category.get());
+            Map<String, String> body_question = this.buildTaskParameterMap(task, category.get(), feedbackLevels);
             try {
                 LOG.debug("Creating moodle question for task {} and category {}", task.getId(), category.get().getId());
                 String responseBody = this.post(getDefaultQueryParameters("local_etutorsync_create_question"), body_question);
@@ -161,7 +186,7 @@ public class QuestionService extends MoodleService {
             if (oldMoodle.isEmpty() || newCategory.isEmpty())
                 continue;
 
-            Map<String, String> body_question = this.buildTaskParameterMap(task, newCategory.get());
+            Map<String, String> body_question = this.buildTaskParameterMap(task, newCategory.get(), feedbackLevels);
             body_question.put("data[oldMoodleId]", String.valueOf(oldMoodle.get().getMoodleId()));
 
             try {
@@ -211,7 +236,23 @@ public class QuestionService extends MoodleService {
         }
     }
 
-    private Map<String, String> buildTaskParameterMap(Task task, TaskCategory category) {
+    /**
+     * Builds the CodeRunner template parameters for the question of the task in the category.
+     * <p>
+     * {@code FEEDBACK_LEVEL} is kept for templates that do not yet distinguish between the modes and contains the diagnose level.
+     *
+     * @param task   The task.
+     * @param levels The feedback levels of the task in the category.
+     * @return The template parameters as JSON string.
+     */
+    static String buildTemplateParams(Task task, TaskCategoryFeedbackLevelDto levels) {
+        return "{\"TASK_ID\": " + task.getId() +
+            ", \"FEEDBACK_LEVEL\": " + levels.diagnoseFeedbackLevel() +
+            ", \"FEEDBACK_LEVEL_SUBMIT\": " + levels.submitFeedbackLevel() +
+            ", \"FEEDBACK_LEVEL_DIAGNOSE\": " + levels.diagnoseFeedbackLevel() + "}";
+    }
+
+    private Map<String, String> buildTaskParameterMap(Task task, TaskCategory category, Map<Long, TaskCategoryFeedbackLevelDto> feedbackLevels) {
         StringBuilder builder = new StringBuilder("<span lang=\"de\" class=\"multilang\">");
         TaskGroup taskGroup = null;
         if (task.getTaskGroup() != null && task.getTaskGroup().getId() != null)
@@ -240,7 +281,8 @@ public class QuestionService extends MoodleService {
         body_question.put("data[course_category_id]", task.getOrganizationalUnit().getMoodleId().toString());
         body_question.put("data[points]", task.getMaxPoints().toString());
         body_question.put("data[coderunnertype]", "etutor-" + task.getTaskType());
-        body_question.put("data[templateparams]", "{" + "\"TASK_ID\": " + task.getId() + ", \"FEEDBACK_LEVEL\":0}");
+        var levels = feedbackLevels == null ? null : feedbackLevels.get(category.getId());
+        body_question.put("data[templateparams]", buildTemplateParams(task, levels != null ? levels : TaskCategoryFeedbackLevelDto.defaults(category.getId())));
         body_question.put("data[examTask]", task.isExamTask() + "");
         if (taskGroup != null)
             body_question.put("data[tag]", taskGroup.getName());
