@@ -215,7 +215,23 @@ public class QuestionService extends MoodleService {
             return;
         }
 
-        var moodleIds = taskMoodleIdRepository.findById_TaskId(task.getId());
+        this.markQuestionAsDeleted(task, taskMoodleIdRepository.findById_TaskId(task.getId()));
+    }
+
+    /**
+     * Marks the specified questions of the task as deleted in Moodle.
+     * <p>
+     * Use this method if the moodle ids of the task have already been loaded (e.g. because they are deleted together with the task).
+     *
+     * @param task      The task to mark as deleted.
+     * @param moodleIds The moodle ids of the task.
+     */
+    public void markQuestionAsDeleted(Task task, Collection<TaskMoodleId> moodleIds) {
+        if (this.config.isDisabled()) {
+            LOG.warn("Aborting moodle task deprecation for task {} as moodle-sync is disabled", task.getId());
+            return;
+        }
+
         for (TaskMoodleId id : moodleIds) {
             if (task.getOrganizationalUnit() == null || task.getOrganizationalUnit().getMoodleId() == null)
                 continue;

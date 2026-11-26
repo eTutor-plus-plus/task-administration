@@ -359,6 +359,10 @@ public class TaskAppCommunicationService {
                 .build();
             try (HttpClient client = HttpClient.newBuilder().build()) {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 404) {
+                    LOG.warn("Task {} of type {} does not exist in the task app, treating it as already deleted.", id, taskType);
+                    return;
+                }
                 if (response.statusCode() != 204) {
                     LOG.error("Request for deleting task {} failed with status code {} and body {}.", id, response.statusCode(), response.body());
                     throwExceptionIfBodyContainsMessage(response, "Request for deleting task failed");
